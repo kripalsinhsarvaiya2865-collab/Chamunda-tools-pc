@@ -1,729 +1,325 @@
 <!DOCTYPE html>
 <html lang="gu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chamunda Eng Tools — PC</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#c62828">
-    <link rel="icon" href="favicon.ico">
-    <link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamunda Eng Tools — PC</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f3f3f3;--card:#fff;--nav:#f3f3f3;--border:#e3e3e3;--pri:#0067c0;--pri-light:#e8f1fb;--text:#1b1b1b;--muted:#6b6b6b;--sec:#107c10;--sec-light:#dff6dd;--bad:#c42b1c;--bad-light:#fde7e9;--warn:#9d5d00;--warn-light:#fff4ce;--hover:rgba(128,128,128,.14)}
+[data-theme="dark"]{--bg:#202020;--card:#2b2b2b;--nav:#202020;--border:#3a3a3a;--pri:#4cc2ff;--pri-light:rgba(76,194,255,.14);--text:#f3f3f3;--muted:#a0a0a0;--sec:#6ccb5f;--sec-light:rgba(108,203,95,.15);--bad:#ff99a4;--bad-light:rgba(255,153,164,.14);--warn:#fce100;--warn-light:rgba(252,225,0,.12)}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:13px 'Segoe UI Variable','Segoe UI',system-ui,sans-serif}
+.hidden{display:none!important}
+.muted{color:var(--muted);font-size:11px}.nowrap{white-space:nowrap}
 
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+/* ટાઈટલ બાર */
+.titlebar{position:fixed;top:0;left:0;right:0;height:40px;display:flex;align-items:center;gap:10px;padding:0 14px;background:var(--bg);z-index:50}
+.app-ico{width:18px;height:18px;border-radius:4px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.app-name{font-size:12px;font-weight:600}.app-sub{font-size:11px;color:var(--muted)}
+.spacer{flex:1}
+#sync-status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--muted)}
+#sync-status.online{background:var(--sec-light);color:var(--sec);border-color:transparent}
+#sync-status.offline{background:var(--bad-light);color:var(--bad);border-color:transparent}
+#install-btn{display:none}
 
-    <style>
-        :root {
-            --bg: #f0f2f5; --text: #1a1a2e; --card: #ffffff;
-            --nav: #ffffff; --pri: #c62828; --sec: #2e7d32;
-            --border: #e0e0e0; --muted: #7a7a8c;
-            --pri-light: #ffebee; --sec-light: #e8f5e9;
-            --shadow: 0 4px 16px rgba(0,0,0,0.08);
-            --radius: 16px;
-        }
-        [data-theme="dark"] {
-            --bg: #0d0d14; --text: #eaeaf5; --card: #1a1a2a;
-            --nav: #12121e; --pri: #ef5350; --sec: #4caf50;
-            --border: #2a2a3e; --muted: #9090a8;
-            --pri-light: rgba(239,83,80,0.1); --sec-light: rgba(76,175,80,0.1);
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
+/* ડાબી ઊભી પટ્ટી */
+.rail{position:fixed;top:40px;left:0;bottom:0;width:48px;padding:4px 5px;background:var(--nav);display:flex;flex-direction:column;gap:2px;overflow:hidden auto;transition:width .15s;z-index:40}
+body.rail-open .rail{width:210px}
+.rail-item{position:relative;display:flex;align-items:center;gap:14px;height:38px;padding:0 10px;border-radius:5px;cursor:pointer;white-space:nowrap;font-weight:500;color:var(--text)}
+.rail-item:hover{background:var(--hover)}
+.rail-item.active{background:var(--hover)}
+.rail-item.active::before{content:'';position:absolute;left:-5px;top:11px;width:3px;height:16px;border-radius:2px;background:var(--pri)}
+.rail-item svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rail-label{display:none}body.rail-open .rail-label{display:inline}
+.rail-burger{margin-bottom:6px}
+.rail-item.has-alert::after{content:'';position:absolute;left:24px;top:8px;width:8px;height:8px;border-radius:50%;background:#e53935}
+.sub-menu{display:none;flex-direction:column;gap:2px;margin:0 0 4px 22px;padding-left:8px;border-left:1px solid var(--border)}
+body.rail-open .sub-menu.open{display:flex}
+.sub-item{padding:7px 10px;border-radius:5px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+.sub-item:hover{background:var(--hover);color:var(--text)}
+.sub-item.active-sub{background:var(--pri-light);color:var(--pri);font-weight:700}
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg); color: var(--text);
-            margin: 0; padding-bottom: 88px;
-            transition: background 0.3s, color 0.3s;
-            overflow-x: hidden;
-            font-size: 16px;
-        }
+/* મુખ્ય એરિયા */
+.main{margin:40px 0 0 48px;padding:6px 28px 28px;transition:margin .15s}
+body.rail-open .main{margin-left:210px}
+.page-title{font-size:26px;font-weight:600;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.card-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.badge{margin-left:auto;background:var(--pri-light);color:var(--pri);border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:6px 10px;font:inherit;color:var(--text);background:var(--card);border:1px solid #d0d0d0;border-bottom-color:#8a8a8a;border-radius:4px;outline:none}
+[data-theme="dark"] input,[data-theme="dark"] select{background:#323232;border-color:#4a4a4a}
+input:focus,select:focus{border-bottom:2px solid var(--pri)}
+button{font:inherit;font-weight:600;padding:7px 16px;border:1px solid transparent;border-radius:4px;background:var(--pri);color:#fff;cursor:pointer}
+[data-theme="dark"] button{color:#000}
+button:hover{filter:brightness(1.08)}button:disabled{opacity:.6}
+.btn-light{background:var(--card);color:var(--text);border-color:var(--border)}
+[data-theme="dark"] .btn-light{color:var(--text)}
+.btn-sm{padding:3px 9px;font-size:12px}
+.btn-edit{background:#f7630c;color:#fff!important}.btn-del{background:var(--bad);color:#fff!important}
+.btn-green{background:var(--sec);color:#fff}
 
-        /* ── HEADER ── */
-        .header {
-            background: var(--pri);
-            padding: 14px 16px 12px;
-            position: sticky; top: 0; z-index: 900;
-            box-shadow: 0 3px 16px rgba(198,40,40,0.35);
-        }
-        .header-row { display: flex; align-items: center; justify-content: space-between; }
-        .header h3 { margin: 0; color: #fff; font-size: 19px; font-weight: 800; letter-spacing: 0.3px; }
-        .header-sub { color: rgba(255,255,255,0.78); font-size: 12px; margin-top: 3px; font-weight: 500; }
-        #sync-status {
-            font-size: 12px; font-weight: 700;
-            background: rgba(255,255,255,0.18);
-            color: #fff; padding: 5px 12px; border-radius: 20px;
-            white-space: nowrap; letter-spacing: 0.3px;
-        }
-        #sync-status.online { background: rgba(76,175,80,0.55); }
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.row>.fld{flex:1 1 150px;min-width:130px}
+.row>.fit{flex:0 0 auto}
+#entry-fields{display:contents}
+.mode-btns{display:flex;gap:6px}
+.mode-btn{padding:6px 14px;border-radius:4px;border:1.5px solid var(--border);cursor:pointer;font-weight:600;white-space:nowrap;background:var(--card)}
+.mode-btn.inactive{opacity:.5}
+.btn-out.active{background:#ede7f6;color:#6a1b9a;border-color:#6a1b9a}
+.btn-in.active{background:var(--sec-light);color:var(--sec);border-color:var(--sec)}
+.search-container{position:relative}
+.search-results{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;max-height:220px;overflow:auto;background:var(--card);border:1px solid var(--pri);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:30}
+.search-results div{padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.search-results div:hover{background:var(--pri-light)}
 
-        /* ── CONTAINER ── */
-        .container { padding: 14px; max-width: 600px; margin: auto; }
+/* ટેબલ */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.grid2 .card{margin-bottom:0}
+.scroll{max-height:calc(100vh - 330px);overflow:auto}
+.scroll.tall{max-height:calc(100vh - 250px)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)}
+th{position:sticky;top:0;background:var(--card);color:var(--muted);font-weight:600;z-index:2}
+tbody tr:hover td{background:var(--hover)}
+tr:last-child td{border-bottom:none}
+.type-out{background:#ede7f6;color:#6a1b9a;border-radius:4px;padding:1px 8px;font-weight:700;font-size:11px}
+.type-in{background:var(--sec-light);color:var(--sec);border-radius:4px;padding:1px 8px;font-weight:700;font-size:11px}
+.stock-ok{background:var(--sec-light);color:var(--sec);border-radius:4px;padding:2px 9px;font-weight:700}
+.stock-low{background:var(--bad-light);color:var(--bad);border-radius:4px;padding:2px 9px;font-weight:700}
+.stock-mid{background:var(--warn-light);color:var(--warn);border-radius:4px;padding:2px 9px;font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:18px}
+.duplicate-tool td{background:rgba(255,193,7,.18)!important}
+.dup-badge{background:#ffc107;color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:6px}
+.hist-filter{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.bar{height:6px;background:var(--border);border-radius:4px;overflow:hidden;min-width:70px}.bar>i{display:block;height:100%}
 
-        /* ── CARD ── */
-        .card {
-            background: var(--card); border-radius: var(--radius);
-            margin-bottom: 14px; padding: 18px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-        .card-title {
-            font-size: 16px; font-weight: 800; color: var(--pri);
-            margin: 0 0 16px; padding-bottom: 12px;
-            border-bottom: 2px solid var(--pri-light);
-            display: flex; align-items: center; gap: 8px;
-            letter-spacing: 0.2px;
-        }
+/* અલર્ટ */
+.sum-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.sum-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.sum-box .n{font-size:24px;font-weight:600}.sum-box .l{font-size:12px;color:var(--muted)}
+.sum-zero .n{color:var(--bad)}.sum-low .n{color:var(--warn)}.sum-ok .n{color:var(--sec)}
 
-        /* ── FORM ── */
-        label {
-            font-size: 12px; font-weight: 700; color: var(--muted);
-            display: block; margin-top: 14px; margin-bottom: 5px;
-            text-transform: uppercase; letter-spacing: 0.6px;
-        }
-        input, select {
-            width: 100%; padding: 13px 15px;
-            border-radius: 11px; border: 2px solid var(--border);
-            background: var(--bg); color: var(--text);
-            font-size: 16px; outline: none;
-            transition: border 0.2s, box-shadow 0.2s;
-            font-family: inherit;
-        }
-        input:focus, select:focus {
-            border-color: var(--pri);
-            box-shadow: 0 0 0 3px var(--pri-light);
-        }
-        [data-theme="dark"] input,
-        [data-theme="dark"] select { background: #20202e; }
+/* રિપોર્ટ */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{background:var(--card);color:var(--text);border:1px solid var(--border)}
+[data-theme="dark"] .chip{color:var(--text)}
+.chip.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+[data-theme="dark"] .chip.active{color:#000}
+.rep-period{font-size:12px;color:var(--muted);margin:-4px 0 8px;font-weight:600}
+.rep-summary{margin-top:10px;padding:7px;background:var(--hover);border-radius:6px;font-weight:600;text-align:center}
+.rep-grid.single{grid-template-columns:1fr}.rep-grid.single #rep-dt-card{display:none}
 
-        button {
-            width: 100%; padding: 15px; border-radius: 12px; border: none;
-            background: var(--pri); color: white;
-            font-size: 16px; font-weight: 700; cursor: pointer;
-            transition: all 0.2s; margin-top: 12px; letter-spacing: 0.3px;
-            font-family: inherit;
-        }
-        button:active { transform: scale(0.97); opacity: 0.88; }
+/* સેટિંગ્સ */
+.set-grid{display:grid;grid-template-columns:minmax(300px,.8fr) 1.7fr;gap:12px;align-items:start}
+.set-grid .card{margin-bottom:12px}
 
-        /* ── MODE BUTTONS ── */
-        .mode-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
-        .mode-btn {
-            padding: 16px 8px; border-radius: 14px;
-            border: 2.5px solid transparent;
-            font-size: 14px; font-weight: 700; cursor: pointer;
-            transition: all 0.2s; text-align: center; line-height: 1.5;
-            font-family: inherit;
-        }
-        .mode-btn .m-icon { font-size: 28px; display: block; margin-bottom: 5px; }
-        .mode-btn.active  { opacity: 1; box-shadow: 0 4px 16px rgba(0,0,0,0.18); border-color: currentColor; }
-        .mode-btn.inactive { opacity: 0.38; }
-        .btn-out { background: #ede7f6; color: #6a1b9a; }
-        .btn-in  { background: #e8f5e9; color: #2e7d32; }
-
-        /* ── SAVE BUTTON ── */
-        .btn-save {
-            background: linear-gradient(135deg, #2e7d32, #1b5e20);
-            font-size: 17px; padding: 17px; border-radius: 14px;
-            box-shadow: 0 5px 18px rgba(46,125,50,0.38); margin-top: 20px;
-        }
-
-        /* ── SMALL BUTTONS ── */
-        .btn-sm   { width:auto; padding:7px 13px; font-size:13px; margin:2px; border-radius:8px; margin-top:0; }
-        .btn-edit { background: #f57c00; }
-        .btn-del  { background: #c62828; }
-        .btn-sec  { background: #455a64; }
-
-        /* ── BOTTOM NAV ── */
-        .bottom-nav {
-            position: fixed; bottom: 0; width: 100%; background: var(--nav);
-            display: flex; border-top: 1.5px solid var(--border);
-            height: 76px; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); z-index: 800;
-        }
-        .nav-item {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            cursor: pointer; gap: 4px; color: var(--muted);
-            font-size: 11px; font-weight: 600; transition: all 0.2s;
-            letter-spacing: 0.2px; padding-top: 2px;
-        }
-        .nav-icon { font-size: 24px; line-height: 1; }
-        .nav-item.active-nav {
-            color: var(--pri);
-            border-top: 3px solid var(--pri);
-            background: var(--pri-light);
-        }
-
-        /* ── TABLE ── */
-        .hidden { display: none; }
-        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 300px; }
-        th, td { padding: 11px 8px; text-align: left; border-bottom: 1px solid var(--border); }
-        th {
-            background: var(--pri-light); color: var(--pri);
-            font-size: 11px; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.5px;
-            position: sticky; top: 0;
-        }
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: rgba(0,0,0,0.02); }
-        [data-theme="dark"] tr:hover td { background: rgba(255,255,255,0.03); }
-
-        /* ── MASTER ITEM ── */
-        .master-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 4px; border-bottom: 1px solid var(--border);
-        }
-        .master-item:last-child { border-bottom: none; }
-        .master-item-info { display: flex; flex-direction: column; gap: 4px; }
-        .master-item-name { font-size: 15px; font-weight: 700; }
-        .master-item-sub  { font-size: 12px; color: var(--muted); }
-        .action-btns { display: flex; gap: 6px; flex-shrink: 0; }
-
-        /* ── SEARCH DROPDOWN ── */
-        .search-container { position: relative; }
-        .search-results {
-            position: absolute; background: var(--card); width: 100%;
-            border: 2px solid var(--pri); z-index: 200;
-            max-height: 200px; overflow-y: auto;
-            border-radius: 12px; display: none;
-            box-shadow: 0 8px 28px rgba(0,0,0,0.18); top: calc(100% + 5px);
-        }
-        .search-results div {
-            padding: 13px 15px; cursor: pointer;
-            border-bottom: 1px solid var(--border); font-size: 15px;
-        }
-        .search-results div:last-child { border-bottom: none; }
-        .search-results div:hover { background: var(--pri-light); }
-
-        /* ── FILTER / PDF ── */
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .pdf-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .pdf-btns button { font-size: 14px; padding: 14px 6px; border-radius: 12px; margin-top: 0; }
-        .btn-pdf1 { background: linear-gradient(135deg,#0097a7,#006064); }
-        .btn-pdf2 { background: linear-gradient(135deg,#ad1457,#880e4f); }
-        .btn-pdf3 { background: linear-gradient(135deg,#f57c00,#bf360c); }
-        .btn-pdf4 { background: linear-gradient(135deg,#2e7d32,#1b5e20); }
-        .btn-theme {
-            background: linear-gradient(135deg,#37474f,#263238);
-            display:flex; align-items:center; justify-content:center; gap:10px;
-            font-size: 16px;
-        }
-
-        /* ── STOCK BADGES ── */
-        .stock-ok  {
-            display:inline-block; background: var(--sec-light); color: var(--sec);
-            border-radius:8px; padding:3px 10px; font-weight:800; font-size:14px;
-        }
-        .stock-low {
-            display:inline-block; background: var(--pri-light); color: #c62828;
-            border-radius:8px; padding:3px 10px; font-weight:800; font-size:14px;
-        }
-        .type-out {
-            display: inline-block;
-            background:#ede7f6; color:#6a1b9a; border-radius:6px;
-            padding:2px 8px; font-size:11px; font-weight:800;
-        }
-        .type-in  {
-            display: inline-block;
-            background: var(--sec-light); color: var(--sec); border-radius:6px;
-            padding:2px 8px; font-size:11px; font-weight:800;
-        }
-
-        /* ── DUPLICATE ── */
-        .duplicate-tool { background: rgba(255,193,7,0.12) !important; border-left: 4px solid #ffc107 !important; }
-        .dup-badge { background:#ffc107; color:#000; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; margin-left:6px; }
-
-        /* ── TWO-COL INPUT ── */
-        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        /* ── EDIT MODAL ── */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6); z-index: 1000;
-            align-items: flex-end; justify-content: center;
-            backdrop-filter: blur(3px);
-        }
-        .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: var(--card); width: 100%; max-width: 500px;
-            border-radius: 22px 22px 0 0; padding: 24px 18px 36px;
-            box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
-            animation: slideUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal-title {
-            font-size: 17px; font-weight: 800; color: var(--pri);
-            margin: 0 0 18px; padding-bottom: 14px;
-            border-bottom: 2px solid var(--pri-light);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .modal-close {
-            margin-left: auto; background: var(--border); color: var(--text);
-            width: 32px; height: 32px; border-radius: 50%; border: none;
-            font-size: 16px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center; padding: 0;
-        }
-        .btn-update {
-            background: linear-gradient(135deg, #f57c00, #e65100);
-            box-shadow: 0 5px 18px rgba(245,124,0,0.38);
-            margin-top: 18px; border-radius: 14px; padding: 16px;
-        }
-
-        /* ── HISTORY SECTION SPECIFIC ── */
-        .history-filter-row {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-            margin-bottom: 2px;
-        }
-        .history-count-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: var(--pri-light); color: var(--pri);
-            border-radius: 20px; padding: 4px 12px;
-            font-size: 12px; font-weight: 700; margin-left: auto;
-        }
-
-        /* ── HISTORY CARD LIST ── */
-        .hist-item {
-            padding: 11px 0;
-            border-bottom: 1px solid var(--border);
-            display: flex; flex-direction: column; gap: 5px;
-        }
-        .hist-item:last-child { border-bottom: none; }
-        .hist-top-row {
-            display: flex; align-items: center;
-            justify-content: space-between; gap: 8px;
-        }
-        .hist-tool-name {
-            font-size: 15px; font-weight: 700;
-            flex: 1; line-height: 1.3;
-        }
-        .hist-qty {
-            font-size: 20px; font-weight: 800;
-            color: var(--pri); white-space: nowrap;
-        }
-        .hist-bottom-row {
-            display: flex; align-items: center;
-            justify-content: space-between; gap: 6px;
-        }
-        .hist-meta {
-            display: flex; align-items: center;
-            gap: 6px; flex-wrap: wrap;
-        }
-        .hist-date { font-size: 12px; color: var(--muted); font-weight: 600; }
-        .hist-op   { font-size: 12px; color: var(--muted); }
-        .hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
-        .hist-btn {
-            width: 34px; height: 34px; border-radius: 9px;
-            border: none; cursor: pointer; font-size: 16px;
-            display: flex; align-items: center; justify-content: center;
-            padding: 0; margin: 0;
-        }
-        .hist-btn-edit { background: #fff3e0; color: #e65100; }
-        .hist-btn-del  { background: #ffebee; color: #c62828; }
-        [data-theme="dark"] .hist-btn-edit { background: rgba(230,81,0,0.18); color: #ff8a50; }
-        [data-theme="dark"] .hist-btn-del  { background: rgba(198,40,40,0.18); color: #ef9a9a; }
-
-        /* ── STATS ROW ── */
-        .stats-row {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-            margin-bottom: 14px;
-        }
-        .stat-box {
-            background: var(--card); border-radius: 14px; padding: 14px 10px;
-            text-align: center; border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-        }
-        .stat-num { font-size: 22px; font-weight: 800; color: var(--pri); line-height: 1.1; }
-        .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 3px; }
-
-        /* ── ALERT SECTION ── */
-        .alert-summary-row {
-            display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
-            margin-bottom: 14px;
-        }
-        .alert-sum-box {
-            border-radius: 14px; padding: 16px 8px; text-align: center;
-            box-shadow: var(--shadow); border: 1px solid var(--border);
-        }
-        .alert-sum-zero { background: #ffebee; border-color: #ef9a9a; }
-        .alert-sum-low  { background: #fff3e0; border-color: #ffcc80; }
-        .alert-sum-ok   { background: #e8f5e9; border-color: #a5d6a7; }
-        [data-theme="dark"] .alert-sum-zero { background: rgba(198,40,40,0.15); border-color: rgba(198,40,40,0.3); }
-        [data-theme="dark"] .alert-sum-low  { background: rgba(230,81,0,0.15);  border-color: rgba(230,81,0,0.3); }
-        [data-theme="dark"] .alert-sum-ok   { background: rgba(46,125,50,0.15); border-color: rgba(46,125,50,0.3); }
-        .alert-sum-num  { font-size: 26px; font-weight: 800; line-height: 1.1; }
-        .alert-sum-zero .alert-sum-num { color: #c62828; }
-        .alert-sum-low  .alert-sum-num { color: #e65100; }
-        .alert-sum-ok   .alert-sum-num { color: #2e7d32; }
-        .alert-sum-lbl  { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 4px; }
-
-        /* Alert items */
-        .alert-item {
-            border-radius: 12px; padding: 14px;
-            margin-bottom: 10px; border: 1.5px solid;
-        }
-        .alert-item:last-child { margin-bottom: 0; }
-        .alert-item-zero { background: #fff5f5; border-color: #ffcdd2; }
-        .alert-item-low  { background: #fff8f0; border-color: #ffe0b2; }
-        [data-theme="dark"] .alert-item-zero { background: rgba(198,40,40,0.1);  border-color: rgba(198,40,40,0.25); }
-        [data-theme="dark"] .alert-item-low  { background: rgba(230,81,0,0.1);   border-color: rgba(230,81,0,0.25); }
-        .alert-item-top {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            gap: 8px; margin-bottom: 4px;
-        }
-        .alert-item-name { font-size: 15px; font-weight: 800; flex: 1; }
-        .alert-item-avail { font-size: 14px; font-weight: 800; white-space: nowrap; }
-        .alert-avail-zero { color: #c62828; }
-        .alert-avail-low  { color: #e65100; }
-        .alert-item-cat   { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
-        .alert-progress-bar {
-            width: 100%; height: 7px; background: var(--border);
-            border-radius: 6px; overflow: hidden; margin-bottom: 10px;
-        }
-        .alert-progress-fill { height: 100%; border-radius: 6px; transition: width 0.4s; }
-        .alert-item-stats {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 5px 10px; font-size: 13px; color: var(--text);
-        }
-        .alert-item-stats span { white-space: nowrap; }
-
-        /* Nav alert dot */
-        .nav-alert-dot {
-            display: inline-flex; align-items: center; justify-content: center;
-            background: #c62828; color: #fff;
-            font-size: 10px; font-weight: 800;
-            width: 18px; height: 18px; border-radius: 50%;
-            margin-left: 2px; vertical-align: middle;
-        }
-        .has-alert { color: #c62828 !important; }
-        .has-alert .nav-icon::after {
-            content: ''; display: block; width: 8px; height: 8px;
-            background: #c62828; border-radius: 50%;
-            position: absolute; top: 8px; right: calc(50% - 14px);
-            border: 2px solid var(--nav);
-        }
-        .nav-item { position: relative; }
-
-        /* ── SECTION DIVIDER ── */
-        .sec-label {
-            font-size: 11px; font-weight: 800; color: var(--muted);
-            text-transform: uppercase; letter-spacing: 1px;
-            margin: 18px 0 10px; padding-left: 4px;
-        }
-    
-        #sync-status.offline { background: rgba(0,0,0,0.45); }
-        .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px);
-            background: #2e7d32; color: #fff; padding: 11px 18px; border-radius: 24px; font-weight: 700; font-size: 14px;
-            opacity: 0; pointer-events: none; transition: all .25s; z-index: 2000; max-width: 90%; text-align: center; }
-        .toast.bad { background: #c62828; }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-        button:disabled { opacity: .6; }
-
-        .rep-chips { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-        .chip { background: var(--card, #fff); color: var(--text, #222); border: 2px solid #c62828; border-radius: 12px;
-                padding: 12px 6px; font-size: 14px; font-weight: 800; margin: 0; width: auto; box-shadow: none; }
-        .chip.active { background: linear-gradient(135deg,#d32f2f,#b71c1c); color:#fff; }
-        .mini-btn { background: transparent; color: var(--muted, #777); border: 1px dashed var(--muted, #999); border-radius: 10px;
-                padding: 8px; font-size: 12px; margin-top: 10px; box-shadow: none; }
-        .rep-period { font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-weight: 700; }
-        .rep-summary { margin-top: 10px; padding: 10px; background: rgba(128,128,128,0.12); border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; }
-        @media print {
-            body * { visibility: hidden !important; }
-            #rep-view-card, #rep-view-card * { visibility: visible !important; }
-            #rep-view-card { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; }
-            .bottom-nav, .toast, .no-print { display: none !important; }
-        }
-
-        @media (min-width: 900px) {
-            .container { max-width: 980px; }
-            .stats-row { gap: 16px; }
-        }
-    
-        #install-btn { display:none; background:rgba(255,255,255,0.95); color:#c62828; border:none; border-radius:20px;
-            font-size:12px; font-weight:800; padding:6px 12px; margin:0 0 0 8px; width:auto; cursor:pointer; }
-    </style>
+/* મોડલ */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--card);width:400px;border-radius:8px;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.35)}
+.modal-box label{margin-top:10px}
+.modal-title{display:flex;align-items:center;font-size:16px;font-weight:600;margin-bottom:6px}
+.modal-title button{margin-left:auto;padding:2px 9px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--sec);color:#fff;padding:10px 18px;border-radius:6px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:200}
+.toast.bad{background:var(--bad)}.toast.show{opacity:1;transform:translateX(-50%)}
+@media(max-width:1150px){.grid2,.set-grid{grid-template-columns:1fr}.hist-filter{grid-template-columns:1fr 1fr}.scroll{max-height:60vh}}
+@media print{body *{visibility:hidden!important}#rep-view-card,#rep-view-card *{visibility:visible!important}#rep-view-card{position:absolute;left:0;top:0;width:100%;border:none}.scroll{max-height:none!important;overflow:visible!important}}
+</style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-    <div class="header-row">
-        <div>
-            <h3>⚙️ Chamunda Eng Tools</h3>
-            <div class="header-sub">Shri Chamunda CNC Workshop</div>
-        </div>
-        <div style="display:flex;align-items:center;"><div id="sync-status">Connecting...</div><button id="install-btn">⬇ Install</button></div>
-    </div>
+<div class="titlebar">
+  <div class="app-ico">C</div>
+  <span class="app-name">Chamunda Eng Tools</span><span class="app-sub">Shri Chamunda CNC Workshop</span>
+  <div class="spacer"></div>
+  <div id="sync-status">Connecting...</div>
+  <button id="install-btn" class="btn-light">⬇ Install</button>
 </div>
 
-<div class="container">
-
-    <!-- ══ ENTRY SECTION ══ -->
-    <div id="entry-sec">
-
-        <!-- Stats Row -->
-        <div class="stats-row">
-            <div class="stat-box">
-                <div class="stat-num" id="stat-tools">–</div>
-                <div class="stat-label">🔧 ટૂલ</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-num" id="stat-txn">–</div>
-                <div class="stat-label">📋 ટ્રાન્ઝ.</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-num" id="stat-low" style="color:#c62828">–</div>
-                <div class="stat-label">⚠️ Low Stock</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">✒️ નવી એન્ટ્રી</div>
-
-            <label>તારીખ</label>
-            <input type="date" id="t-date">
-
-            <label>ટ્રાન્ઝેક્શન પ્રકાર</label>
-            <div class="mode-btns">
-                <div class="mode-btn btn-out active" id="btnOut" onclick="setMode('OUT')">
-                    <span class="m-icon">🔧</span>
-                    Tool Out<br><small>વપરાશ / Issue</small>
-                </div>
-                <div class="mode-btn btn-in inactive" id="btnIn" onclick="setMode('PURCHASE')">
-                    <span class="m-icon">📦</span>
-                    Purchase<br><small>નવી ખરીદી</small>
-                </div>
-            </div>
-
-            <div id="entry-fields"></div>
-
-            <button class="btn-save" id="save-btn" onclick="saveTransaction()">✅ સેવ કરો</button>
-        </div>
-    </div>
-
-    <!-- ══ HISTORY SECTION ══ -->
-    <div id="history-sec" class="hidden">
-        <div class="card">
-            <div class="card-title">🔍 ઇતિહાસ ફિલ્ટર</div>
-            <div class="history-filter-row">
-                <div>
-                    <label>મહિનો</label>
-                    <input type="month" id="hist-month" onchange="updateHistoryTable()">
-                </div>
-                <div>
-                    <label>ઓપ / સ.</label>
-                    <select id="hist-op" onchange="onHistFilter('op')"></select>
-                </div>
-            </div>
-            <div>
-                <label>🔧 ટૂલ ફિલ્ટર</label>
-                <select id="hist-tool" onchange="onHistFilter('tool')"></select>
-            </div>
-            <label>🔎 શોધ (નામ / ટૂલ)</label>
-            <input type="text" id="hist-search" placeholder="ટાઈપ કરો..." oninput="updateHistoryTable()">
-        </div>
-
-        <div class="card">
-            <div class="card-title">
-                🕒 ઇતિહાસ
-                <span class="history-count-badge" id="hist-count-badge">0 એન્ટ્રી</span>
-            </div>
-            <div id="history-body-main"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">📥 ઇતિહાસ PDF</div>
-            <button class="btn-pdf1" onclick="downloadPDF('HISTORY')" style="margin-top:0;">📋 વ્યવહાર PDF ડાઉનલોડ</button>
-        </div>
-    </div>
-
-    <!-- ══ REPORT SECTION ══ -->
-    <div id="report-sec" class="hidden">
-        <div class="card">
-            <div class="card-title">📊 રિપોર્ટ પસંદ કરો</div>
-            <div class="rep-chips">
-                <button id="chip-STOCK" class="chip active" onclick="setRepType('STOCK')">📦 સિલક</button>
-                <button id="chip-TOOLS" class="chip" onclick="setRepType('TOOLS')">🔧 ટૂલ લિસ્ટ</button>
-                <button id="chip-OPERATORS" class="chip" onclick="setRepType('OPERATORS')">👤 ઓપરેટર</button>
-                <button id="chip-HISTORY" class="chip" onclick="setRepType('HISTORY')">📋 વ્યવહાર</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">🔍 ફિલ્ટર</div>
-            <div class="filter-grid">
-                <div id="f-month">
-                    <label>મહિનો</label>
-                    <input type="month" id="rep-month" onchange="updateAllReports()">
-                </div>
-                <div id="f-cat">
-                    <label>કેટેગરી</label>
-                    <select id="rep-cat" onchange="updateAllReports()"></select>
-                </div>
-            </div>
-            <div id="f-tool">
-                <label>🔧 ટૂલ</label>
-                <select id="rep-tool" onchange="updateAllReports()"></select>
-            </div>
-            <div id="f-op">
-                <label>👤 ઓપરેટર / સપ્લાયર</label>
-                <select id="rep-op" onchange="updateAllReports()"></select>
-            </div>
-            <button class="mini-btn" onclick="clearRepFilters()">✖ ફિલ્ટર સાફ કરો</button>
-        </div>
-
-        <div class="card table-responsive" id="rep-view-card">
-            <div class="card-title" id="rep-title">📦 સિલક રિપોર્ટ</div>
-            <div id="rep-period" class="rep-period"></div>
-            <table>
-                <thead id="rep-head"></thead>
-                <tbody id="rep-body"></tbody>
-            </table>
-            <div id="rep-summary" class="rep-summary"></div>
-        </div>
-
-        <div class="card no-print">
-            <div class="pdf-btns">
-                <button class="btn-pdf2" onclick="downloadReport()" style="margin-top:0;">📥 PDF ડાઉનલોડ</button>
-                <button class="btn-pdf3" onclick="window.print()" style="margin-top:0;">🖨 પ્રિન્ટ (ગુજરાતી)</button>
-            </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">
-                ગુજરાતી નામ PDF માં બરાબર ન દેખાય તો "પ્રિન્ટ" દબાવી "Save as PDF" પસંદ કરો.
-            </div>
-        </div>
-    </div>
-
-    <!-- ══ ALERT SECTION ══ -->
-    <div id="alert-sec" class="hidden">
-
-        <!-- Summary cards -->
-        <div class="alert-summary-row">
-            <div class="alert-sum-box alert-sum-zero">
-                <div class="alert-sum-num" id="alrt-zero-count">0</div>
-                <div class="alert-sum-lbl">⛔ ખાલી</div>
-            </div>
-            <div class="alert-sum-box alert-sum-low">
-                <div class="alert-sum-num" id="alrt-low-count">0</div>
-                <div class="alert-sum-lbl">⚠️ Low Stock</div>
-            </div>
-            <div class="alert-sum-box alert-sum-ok">
-                <div class="alert-sum-num" id="alrt-ok-count">0</div>
-                <div class="alert-sum-lbl">✅ ઓકે</div>
-            </div>
-        </div>
-
-        <!-- Zero stock -->
-        <div class="card" id="alrt-zero-card">
-            <div class="card-title" style="color:#b71c1c;">⛔ સ્ટોક ખાલી છે</div>
-            <div id="alrt-zero-list"></div>
-        </div>
-
-        <!-- Low stock -->
-        <div class="card" id="alrt-low-card">
-            <div class="card-title" style="color:#e65100;">⚠️ Low Stock — મર્યાદા કરતાં ઓછો</div>
-            <div id="alrt-low-list"></div>
-        </div>
-
-        <!-- All-clear -->
-        <div class="card hidden" id="alrt-allok-card">
-            <div style="text-align:center;padding:28px 0;">
-                <div style="font-size:52px;">✅</div>
-                <div style="font-size:17px;font-weight:800;color:var(--sec);margin-top:10px;">બધો સ્ટોક ઓકે છે!</div>
-                <div style="font-size:13px;color:var(--muted);margin-top:6px;">કોઈ ટૂલ Low અથવા ખાલી નથી</div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ══ SETTINGS SECTION ══ -->
-    <div id="setting-sec" class="hidden">
-
-        <div class="card">
-            <div class="card-title">🌗 થીમ</div>
-            <button class="btn-theme" onclick="toggleTheme()">🌙 Dark &nbsp;/&nbsp; ☀️ Light Mode</button>
-        </div>
-
-        <div class="card">
-            <div class="card-title">👤 ઓપરેટર માસ્ટર</div>
-            <label>ઓપરેટર નામ</label>
-            <input type="text" id="new-op" placeholder="ઉદા: Ramesh, Suresh...">
-            <button onclick="addOperator()" style="background:var(--sec);">+ ઓપરેટર ઉમેરો</button>
-            <div id="op-list-display" style="margin-top:12px;"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-title" id="tool-master-title">🛠️ ટૂલ માસ્ટર</div>
-            <input type="hidden" id="edit-tool-index" value="-1">
-
-            <label>ટૂલ નામ</label>
-            <input type="text" id="new-tool" placeholder="ઉદા: VNMG Insert, Boring Bar">
-
-            <label>કેટેગરી</label>
-            <input type="text" id="new-cat" placeholder="ઉદા: Boring, Insert, Drill">
-
-            <div class="two-col">
-                <div>
-                    <label>ઓપનિંગ સ્ટોક</label>
-                    <input type="number" id="new-stock" placeholder="0" min="0">
-                </div>
-                <div>
-                    <label>મિનિ. એલર્ટ</label>
-                    <input type="number" id="min-limit" placeholder="0" min="0">
-                </div>
-            </div>
-
-            <button id="tool-btn" onclick="addToolMaster()">+ ટૂલ ઉમેરો</button>
-            <button id="cancel-edit" class="hidden btn-sec" onclick="cancelToolEdit()">✖ કેન્સલ</button>
-
-            <div id="tool-list-display" style="margin-top:14px;"></div>
-        </div>
-    </div>
-
-</div><!-- /container -->
-
-<!-- EDIT TRANSACTION MODAL -->
-<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
-    <div class="modal-box">
-        <div class="modal-title">
-            ✏️ વ્યવહાર સુધારો
-            <button class="modal-close" onclick="closeEditModal()">✕</button>
-        </div>
-        <input type="hidden" id="edit-tr-id">
-        <label>તારીખ</label>
-        <input type="date" id="edit-tr-date">
-        <label>ઓપરેટર / સપ્લાયર</label>
-        <input type="text" id="edit-tr-op">
-        <label>ટૂલ નામ</label>
-        <input type="text" id="edit-tr-tool" readonly style="opacity:0.55;">
-        <label>નંગ (Quantity)</label>
-        <input type="number" id="edit-tr-qty" min="1">
-        <button class="btn-update" onclick="saveEditTransaction()">✔ અપડેટ કરો</button>
-    </div>
-</div>
-
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-    <div class="nav-item active-nav" id="n-entry" onclick="showSec('entry')">
-        <span class="nav-icon">✒️</span>એન્ટ્રી
-    </div>
-    <div class="nav-item" id="n-history" onclick="showSec('history')">
-        <span class="nav-icon">🕒</span>ઇતિહાસ
-    </div>
-    <div class="nav-item" id="n-alert" onclick="showSec('alert')">
-        <span class="nav-icon">🔔</span><span id="n-alert-label">અલર્ટ</span>
-    </div>
-    <div class="nav-item" id="n-report" onclick="showSec('report')">
-        <span class="nav-icon">📊</span>રિપોર્ટ
-    </div>
-    <div class="nav-item" id="n-setting" onclick="showSec('setting')">
-        <span class="nav-icon">⚙️</span>સેટિંગ્સ
-    </div>
+<!-- ડાબી ઊભી પટ્ટી: એન્ટ્રી · અલર્ટ · રિપોર્ટ · સેટિંગ્સ -->
+<nav class="rail">
+  <div class="rail-item rail-burger" onclick="toggleRail()" title="મેનુ"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+  <div class="rail-item active" id="n-entry" onclick="showSec('entry')" title="એન્ટ્રી"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13 7l4 4"/></svg><span class="rail-label">એન્ટ્રી</span></div>
+  <div class="rail-item" id="n-alert" onclick="showSec('alert')" title="અલર્ટ"><svg viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l2 2H4l2-2z"/><path d="M10 21h4"/></svg><span class="rail-label" id="n-alert-label">અલર્ટ</span></div>
+  <div class="rail-item" id="n-report" onclick="showSec('report')" title="રિપોર્ટ"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg><span class="rail-label">રિપોર્ટ</span></div>
+  <div class="sub-menu" id="sub-report">
+    <div class="sub-item active-sub" id="sub-STOCK" onclick="setRepType('STOCK')">📦 સિલક</div>
+    <div class="sub-item" id="sub-TOOLS" onclick="setRepType('TOOLS')">🔧 ટૂલ લિસ્ટ</div>
+    <div class="sub-item" id="sub-OPERATORS" onclick="setRepType('OPERATORS')">👤 ઓપરેટર</div>
+    <div class="sub-item" id="sub-HISTORY" onclick="setRepType('HISTORY')">📋 વ્યવહાર</div>
+  </div>
+  <div class="rail-item" id="n-setting" onclick="showSec('setting')" title="સેટિંગ્સ"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg><span class="rail-label">સેટિંગ્સ</span></div>
 </nav>
 
-<script>
+<main class="main">
 
+<!-- ══ એન્ટ્રી ══ -->
+<section id="entry-sec">
+  <h1 class="page-title">એન્ટ્રી</h1>
+  <div class="card">
+    <div class="card-title">✒️ નવી એન્ટ્રી</div>
+    <div class="row">
+      <div class="fld" style="flex:0 1 160px"><label>તારીખ</label><input type="date" id="t-date"></div>
+      <div class="fit"><label>ટ્રાન્ઝેક્શન પ્રકાર</label>
+        <div class="mode-btns">
+          <div class="mode-btn btn-out active" id="btnOut" onclick="setMode('OUT')">🔧 Tool Out</div>
+          <div class="mode-btn btn-in inactive" id="btnIn" onclick="setMode('PURCHASE')">📦 Purchase</div>
+        </div></div>
+      <div id="entry-fields"></div>
+      <div class="fit"><button class="btn-green" id="save-btn" onclick="saveTransaction()">✅ સેવ કરો</button></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">🆕 આજની એન્ટ્રી <span class="badge" id="new-count">0</span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>સમય</th><th>ઓપરેટર</th><th>ટૂલ</th><th>પ્રકાર</th><th>નંગ</th><th></th></tr></thead>
+        <tbody id="new-body"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🕒 ઇતિહાસ <span class="badge" id="hist-count-badge">0 એન્ટ્રી</span>
+        <button class="btn-light btn-sm" onclick="downloadPDF('HISTORY')">📥 PDF</button></div>
+      <div class="hist-filter">
+        <div><label>મહિનો</label><input type="month" id="hist-month" onchange="updateHistoryTable()"></div>
+        <div><label>ઓપરેટર / સપ્લાયર</label><select id="hist-op" onchange="onHistFilter('op')"></select></div>
+        <div><label>ટૂલ</label><select id="hist-tool" onchange="onHistFilter('tool')"></select></div>
+        <div><label>શોધ</label><input type="text" id="hist-search" placeholder="નામ / ટૂલ..." oninput="updateHistoryTable()"></div>
+      </div>
+      <div class="scroll"><table>
+        <thead><tr><th>તારીખ / સમય</th><th>ઓપરેટર</th><th>ટૂલ</th><th>પ્રકાર</th><th>નંગ</th><th></th></tr></thead>
+        <tbody id="hist-table-body"></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ અલર્ટ ══ -->
+<section id="alert-sec" class="hidden">
+  <h1 class="page-title">અલર્ટ</h1>
+  <div class="sum-row">
+    <div class="sum-box sum-zero"><div class="n" id="alrt-zero-count">0</div><div class="l">⛔ સ્ટોક ખાલી</div></div>
+    <div class="sum-box sum-low"><div class="n" id="alrt-low-count">0</div><div class="l">⚠️ Low Stock</div></div>
+    <div class="sum-box sum-ok"><div class="n" id="alrt-ok-count">0</div><div class="l">✅ ઓકે</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card" id="alrt-zero-card">
+      <div class="card-title" style="color:var(--bad)">⛔ સ્ટોક ખાલી છે</div>
+      <div class="scroll tall"><table><thead><tr><th>ટૂલ</th><th>કેટેગરી</th><th>કુલ</th><th>વપરાશ</th><th>Min</th><th>બાકી</th></tr></thead><tbody id="alrt-zero-list"></tbody></table></div>
+    </div>
+    <div class="card" id="alrt-low-card">
+      <div class="card-title" style="color:var(--warn)">⚠️ Low Stock — મર્યાદા કરતાં ઓછો</div>
+      <div class="scroll tall"><table><thead><tr><th>ટૂલ</th><th>કેટેગરી</th><th>કુલ</th><th>વપરાશ</th><th>Min</th><th>બાકી</th><th></th></tr></thead><tbody id="alrt-low-list"></tbody></table></div>
+    </div>
+  </div>
+  <div class="card hidden" id="alrt-allok-card" style="text-align:center;padding:30px">
+    <div style="font-size:44px">✅</div>
+    <div style="font-size:16px;font-weight:600;color:var(--sec);margin-top:8px">બધો સ્ટોક ઓકે છે!</div>
+  </div>
+</section>
+
+<!-- ══ રિપોર્ટ ══ -->
+<section id="report-sec" class="hidden">
+  <h1 class="page-title">રિપોર્ટ</h1>
+  <div class="chips">
+    <button id="chip-STOCK" class="chip active" onclick="setRepType('STOCK')">📦 સિલક</button>
+    <button id="chip-TOOLS" class="chip" onclick="setRepType('TOOLS')">🔧 ટૂલ લિસ્ટ</button>
+    <button id="chip-OPERATORS" class="chip" onclick="setRepType('OPERATORS')">👤 ઓપરેટર</button>
+    <button id="chip-HISTORY" class="chip" onclick="setRepType('HISTORY')">📋 વ્યવહાર</button>
+    <div class="spacer"></div>
+    <button class="btn-light" onclick="downloadReport()">📥 PDF ડાઉનલોડ</button>
+    <button class="btn-light" onclick="window.print()">🖨 પ્રિન્ટ</button>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div class="fld" id="f-month"><label>મહિનો</label><input type="month" id="rep-month" onchange="updateAllReports()"></div>
+      <div class="fld" id="f-cat"><label>કેટેગરી</label><select id="rep-cat" onchange="updateAllReports()"></select></div>
+      <div class="fld" id="f-tool"><label>ટૂલ</label><select id="rep-tool" onchange="updateAllReports()"></select></div>
+      <div class="fld" id="f-op"><label>ઓપરેટર / સપ્લાયર</label><select id="rep-op" onchange="updateAllReports()"></select></div>
+      <div class="fit"><button class="btn-light" onclick="clearRepFilters()">✖ સાફ કરો</button></div>
+    </div>
+  </div>
+  <div class="grid2 rep-grid" id="rep-grid">
+    <div class="card" id="rep-view-card">
+      <div class="card-title" id="rep-title">📦 સિલક રિપોર્ટ</div>
+      <div id="rep-period" class="rep-period"></div>
+      <div class="scroll tall"><table><thead id="rep-head"></thead><tbody id="rep-body"></tbody></table></div>
+      <div id="rep-summary" class="rep-summary"></div>
+    </div>
+    <div class="card" id="rep-dt-card">
+      <div class="card-title">📅 તારીખ / સમય મુજબ રિપોર્ટ</div>
+      <div id="rep-dt-period" class="rep-period"></div>
+      <div class="scroll tall"><table><thead><tr><th>તારીખ / સમય</th><th>ઓપરેટર</th><th>ટૂલ</th><th>પ્રકાર</th><th>નંગ</th></tr></thead><tbody id="rep-dt-body"></tbody></table></div>
+      <div id="rep-dt-summary" class="rep-summary"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ સેટિંગ્સ ══ -->
+<section id="setting-sec" class="hidden">
+  <h1 class="page-title">સેટિંગ્સ</h1>
+  <div class="set-grid">
+    <div>
+      <div class="card">
+        <div class="card-title">🌗 થીમ</div>
+        <button class="btn-light" onclick="toggleTheme()">🌙 Dark / ☀️ Light</button>
+      </div>
+      <div class="card">
+        <div class="card-title">👤 ઓપરેટર માસ્ટર</div>
+        <div class="row" style="margin-bottom:10px">
+          <div class="fld"><label>ઓપરેટર નામ</label><input type="text" id="new-op" placeholder="ઉદા: Ramesh"></div>
+          <div class="fit"><button class="btn-green" onclick="addOperator()">+ ઉમેરો</button></div>
+        </div>
+        <div class="scroll"><div id="op-list-display"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="tool-master-title">🛠️ ટૂલ માસ્ટર</div>
+      <input type="hidden" id="edit-tool-index" value="-1">
+      <div class="row" style="margin-bottom:10px">
+        <div class="fld" style="flex:2 1 200px"><label>ટૂલ નામ</label><input type="text" id="new-tool" placeholder="ઉદા: VNMG Insert"></div>
+        <div class="fld"><label>કેટેગરી</label><input type="text" id="new-cat" placeholder="ઉદા: Insert"></div>
+        <div class="fld" style="flex:0 1 110px;min-width:90px"><label>ઓપનિંગ સ્ટોક</label><input type="number" id="new-stock" min="0" placeholder="0"></div>
+        <div class="fld" style="flex:0 1 110px;min-width:90px"><label>મિનિ. એલર્ટ</label><input type="number" id="min-limit" min="0" placeholder="0"></div>
+        <div class="fit" style="display:flex;gap:8px">
+          <button id="tool-btn" class="btn-green" onclick="addToolMaster()">+ ટૂલ ઉમેરો</button>
+          <button id="cancel-edit" class="hidden btn-light" onclick="cancelToolEdit()">✖</button>
+        </div>
+      </div>
+      <div class="scroll tall"><div id="tool-list-display"></div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- સુધારો મોડલ -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="modal-box">
+    <div class="modal-title">✏️ વ્યવહાર સુધારો <button class="btn-light" onclick="closeEditModal()">✕</button></div>
+    <input type="hidden" id="edit-tr-id">
+    <label>તારીખ</label><input type="date" id="edit-tr-date">
+    <label>ઓપરેટર / સપ્લાયર</label><input type="text" id="edit-tr-op">
+    <label>ટૂલ નામ</label><input type="text" id="edit-tr-tool" readonly style="opacity:.6">
+    <label>નંગ</label><input type="number" id="edit-tr-qty" min="1">
+    <button class="btn-edit" style="margin-top:16px;width:100%" onclick="saveEditTransaction()">✔ અપડેટ કરો</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
     var FULL = true;
+    var db = { operators:[], opKeys:[], tools:[], transactions:[] };
+    var loaded = false, connected = false, saving = false;
+    var currentMode = 'OUT';
+    var highlightDupIndex = -1;
     var firebaseConfig = {
         apiKey: "AIzaSyCsqhpmQDF0X6ssqTxQ_p2d15VZDJMcE0g",
         authDomain: "prakashbhaitools.firebaseapp.com",
@@ -791,52 +387,7 @@
     });
     }
 
-    function refreshAll() {
-        updateCategoryDropdown();
-        updateAllReports();
-        updateStats();
-        refreshOpSelect();
-        if (FULL) {
-            renderMasterLists();
-            updateHistoryDropdowns();
-            updateHistoryTable();
-            updateAlerts();
-        }
-    }
-
-    // ── SAFE WRITE: confirms only when the server really accepted it ──
-    function canWrite() {
-        if (!loaded) { alert('⏳ ડેટા હજી લોડ થઈ રહ્યો છે, થોડી વાર રાહ જુઓ.'); return false; }
-        if (!connected) { alert('📵 ઇન્ટરનેટ નથી! એન્ટ્રી સેવ થઈ નથી. નેટ ચાલુ કરીને ફરી પ્રયત્ન કરો.'); return false; }
-        return true;
-    }
-    function safeWrite(promise, cb) {
-        var done = false;
-        var timer = setTimeout(function() { if (!done) { done = true; cb(false, 'timeout'); } }, 12000);
-        promise.then(function() {
-            if (done) return; done = true; clearTimeout(timer); cb(true);
-        }, function(e) {
-            if (done) return; done = true; clearTimeout(timer); cb(false, e && e.message ? e.message : 'error');
-        });
-    }
-
-    // ── SHOW SECTION ──
-    var SECTIONS = ['entry','history','alert','report','setting'];
-    function showSec(name) {
-        SECTIONS.forEach(function(s) {
-            $(s + '-sec').classList.add('hidden');
-            $('n-' + s).classList.remove('active-nav');
-        });
-        $(name + '-sec').classList.remove('hidden');
-        $('n-' + name).classList.add('active-nav');
-        if (name === 'report')  updateAllReports();
-        if (FULL && name === 'history') { updateHistoryDropdowns(); updateHistoryTable(); }
-        if (FULL && name === 'alert')   updateAlerts();
-        window.scrollTo(0, 0);
-    }
-
-    // ── STATS ──
-    function stockOf(t) {
+    function _stockOf_unused(t) {
         var p = 0, out = 0;
         db.transactions.forEach(function(tr) {
             if (tr.tool !== t.name) return;
@@ -845,18 +396,6 @@
         });
         return (t.initialStock || 0) + p - out;
     }
-    function updateStats() {
-        $('stat-tools').innerText = db.tools.length;
-        $('stat-txn').innerText = db.transactions.length;
-        var low = db.tools.filter(function(t){ return stockOf(t) <= (t.minLimit || 0); }).length;
-        $('stat-low').innerText = low;
-        if (FULL) {
-            var lbl = $('n-alert-label');
-            if (low > 0) { lbl.innerHTML = 'અલર્ટ <span class="nav-alert-dot">' + low + '</span>'; $('n-alert').classList.add('has-alert'); }
-            else { lbl.innerText = 'અલર્ટ'; $('n-alert').classList.remove('has-alert'); }
-        }
-    }
-
     // ── ENTRY ──
     function opOptionsHtml() {
         return db.operators.length
@@ -875,13 +414,13 @@
         $('btnOut').className = 'mode-btn btn-out ' + (mode === 'OUT' ? 'active' : 'inactive');
         $('btnIn').className  = 'mode-btn btn-in  ' + (mode === 'PURCHASE' ? 'active' : 'inactive');
         var html = mode === 'OUT'
-            ? '<label>ઓપરેટર</label><select id="sel-op">' + opOptionsHtml() + '</select>'
-            : '<label>સપ્લાયર / નોંધ</label><input type="text" id="sel-op" value="STOCK PURCHASE">';
-        html += '<label>ટૂલ શોધો / પસંદ કરો</label>' +
+            ? '<div class="fld"><label>ઓપરેટર</label><select id="sel-op">' + opOptionsHtml() + '</select></div>'
+            : '<div class="fld"><label>સપ્લાયર / નોંધ</label><input type="text" id="sel-op" value="STOCK PURCHASE"></div>';
+        html += '<div class="fld" style="flex:2 1 220px"><label>ટૂલ શોધો / પસંદ કરો</label>' +
                 '<div class="search-container">' +
                 '<input type="text" id="tool-search" placeholder="ટૂલ નામ ટાઈપ કરો..." oninput="filterTools(this.value)" autocomplete="off">' +
-                '<div id="search-res" class="search-results"></div></div>' +
-                '<label>નંગ (Quantity)</label><input type="number" id="sel-qty" value="1" min="1" inputmode="numeric">';
+                '<div id="search-res" class="search-results"></div></div></div>' +
+                '<div class="fld" style="flex:0 1 90px;min-width:80px"><label>નંગ</label><input type="number" id="sel-qty" value="1" min="1" inputmode="numeric"></div>';
         $('entry-fields').innerHTML = html;
     }
     function filterTools(val) {
@@ -923,6 +462,7 @@
             type: currentMode, op: op, tool: toolData.name, cat: toolData.cat, qty: qty,
             subType: currentMode === 'PURCHASE' ? 'Purchase' : 'Issue'
         };
+        sessionIds[tr.id] = 1;
         var btn = $('save-btn');
         saving = true; btn.disabled = true; btn.innerText = '⏳ સેવ થઈ રહ્યું છે...';
         var ref = ROOT.child('transactions').push();
@@ -932,7 +472,7 @@
                 toast('✅ એન્ટ્રી સેવ થઈ ગઈ: ' + tr.tool + ' × ' + tr.qty);
                 $('tool-search').value = ''; $('sel-qty').value = 1; $('search-res').style.display = 'none';
             } else if (msg === 'timeout') {
-                alert('⚠️ સેવ થયાની ખાતરી નથી (નેટ ધીમું છે). ફરી એન્ટ્રી કરતા પહેલાં ' + (FULL ? 'ઇતિહાસ' : 'રિપોર્ટ') + ' ચેક કરો.');
+                alert('⚠️ સેવ થયાની ખાતરી નથી (નેટ ધીમું છે). ફરી એન્ટ્રી કરતા પહેલાં ' + 'ઇતિહાસ' + ' ચેક કરો.');
             } else {
                 alert('❌ એન્ટ્રી સેવ ન થઈ: ' + msg);
             }
@@ -1030,31 +570,6 @@
         $('tool-btn').innerText = '+ ટૂલ ઉમેરો';
         $('cancel-edit').classList.add('hidden');
     }
-    function renderMasterLists() {
-        const noOp = `<p style="color:var(--muted);font-size:14px;text-align:center;margin:12px 0;">કોઈ ઓપરેટર નથી</p>`;
-        document.getElementById('op-list-display').innerHTML = db.operators.length
-            ? db.operators.map((o,i)=>`
-                <div class="master-item">
-                    <div class="master-item-info"><span class="master-item-name">👤 ${esc(o)}</span></div>
-                    <button class="btn-sm btn-del" onclick="deleteMaster('operators',${i})">✖</button>
-                </div>`).join('') : noOp;
-
-        const noTool = `<p style="color:var(--muted);font-size:14px;text-align:center;margin:12px 0;">કોઈ ટૂલ નથી</p>`;
-        document.getElementById('tool-list-display').innerHTML = db.tools.length
-            ? db.tools.map((t,i)=>`
-                <div class="master-item ${i===highlightDupIndex?'duplicate-tool':''}">
-                    <div class="master-item-info">
-                        <span class="master-item-name">🔧 ${esc(t.name)}${i===highlightDupIndex?'<span class="dup-badge">⚠️ DUPLICATE</span>':''}</span>
-                        <span class="master-item-sub">${esc(t.cat)} &nbsp;|&nbsp; ઓ.સ્ટ: ${t.initialStock} &nbsp;|&nbsp; Min: ${t.minLimit}</span>
-                    </div>
-                    <div class="action-btns">
-                        <button class="btn-sm btn-edit" onclick="editTool(${i})">✏️</button>
-                        <button class="btn-sm btn-del"  onclick="deleteMaster('tools',${i})">✖</button>
-                    </div>
-                </div>`).join('') : noTool;
-    }
-
-
     function deleteMaster(key, index) {
         if (!confirm('ડીલીટ કરવું છે?')) return;
         var pass = prompt('🔑 પાસવર્ડ:');
@@ -1069,127 +584,21 @@
         if (changed === 'tool' && $('hist-tool').value !== 'ALL') $('hist-op').value = 'ALL';
         updateHistoryTable();
     }
-    // ── HISTORY TABLE ──
-    function updateHistoryTable() {
-        const selMonth = document.getElementById('hist-month').value;
-        const selOp    = document.getElementById('hist-op') ? document.getElementById('hist-op').value : 'ALL';
-        const selTool  = document.getElementById('hist-tool') ? document.getElementById('hist-tool').value : 'ALL';
-        const search   = document.getElementById('hist-search') ? document.getElementById('hist-search').value.toLowerCase() : '';
-
-        let histHtml = '';
-        const filtered = db.transactions
-            .filter(tr =>
-                (!selMonth || tr.date.startsWith(selMonth)) &&
-                (selOp==='ALL'   || tr.op===selOp) &&
-                (selTool==='ALL' || tr.tool===selTool) &&
-                (tr.op.toLowerCase().includes(search) || tr.tool.toLowerCase().includes(search))
-            )
-            .slice().reverse();
-
-        const badge = document.getElementById('hist-count-badge');
-        if(badge) badge.innerText = filtered.length + ' એન્ટ્રી';
-
-        filtered.forEach(tr => {
-            const typeBadge = tr.type==='OUT'
-                ? `<span class="type-out">OUT</span>`
-                : `<span class="type-in">IN</span>`;
-            histHtml += `
-            <div class="hist-item">
-                <div class="hist-top-row">
-                    <span class="hist-tool-name">🔧 ${esc(tr.tool)}</span>
-                    <span class="hist-qty">${tr.qty} નંગ</span>
-                </div>
-                <div class="hist-bottom-row">
-                    <div class="hist-meta">
-                        <span class="hist-date">📅 ${tr.date}</span>
-                        <span class="hist-op">👤 ${esc(tr.op)}</span>
-                        ${typeBadge}
-                    </div>
-                    <div class="hist-actions">
-                        <button class="hist-btn hist-btn-edit" onclick="editTransaction('${tr._k}')" title="Edit">✏️</button>
-                        <button class="hist-btn hist-btn-del"  onclick="deleteTransaction('${tr._k}')" title="Delete">🗑️</button>
-                    </div>
-                </div>
-            </div>`;
+    // ── SAFE WRITE: confirms only when the server really accepted it ──
+    function canWrite() {
+        if (!loaded) { alert('⏳ ડેટા હજી લોડ થઈ રહ્યો છે, થોડી વાર રાહ જુઓ.'); return false; }
+        if (!connected) { alert('📵 ઇન્ટરનેટ નથી! એન્ટ્રી સેવ થઈ નથી. નેટ ચાલુ કરીને ફરી પ્રયત્ન કરો.'); return false; }
+        return true;
+    }
+    function safeWrite(promise, cb) {
+        var done = false;
+        var timer = setTimeout(function() { if (!done) { done = true; cb(false, 'timeout'); } }, 12000);
+        promise.then(function() {
+            if (done) return; done = true; clearTimeout(timer); cb(true);
+        }, function(e) {
+            if (done) return; done = true; clearTimeout(timer); cb(false, e && e.message ? e.message : 'error');
         });
-        document.getElementById('history-body-main').innerHTML = histHtml || `<p style="text-align:center;color:var(--muted);padding:24px 0;margin:0;">કોઈ ઇતિહાસ નથી</p>`;
     }
-
-
-    // ── ALERTS ──
-    function updateAlerts() {
-        let zeroList = [], lowList = [], okCount = 0;
-
-        db.tools.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(t => {
-            let purchased = db.transactions.filter(tr=>tr.tool===t.name&&tr.subType==='Purchase').reduce((s,c)=>s+c.qty,0);
-            let used      = db.transactions.filter(tr=>tr.tool===t.name&&tr.type==='OUT').reduce((s,c)=>s+c.qty,0);
-            let avail     = (t.initialStock||0) + purchased - used;
-            let minLim    = t.minLimit || 0;
-
-            if(avail <= 0) {
-                zeroList.push({ name:t.name, cat:t.cat, avail, minLim, purchased, used, initial:t.initialStock||0 });
-            } else if(avail <= minLim) {
-                lowList.push({ name:t.name, cat:t.cat, avail, minLim, purchased, used, initial:t.initialStock||0 });
-            } else {
-                okCount++;
-            }
-        });
-
-        // Summary counts
-        document.getElementById('alrt-zero-count').innerText = zeroList.length;
-        document.getElementById('alrt-low-count').innerText  = lowList.length;
-        document.getElementById('alrt-ok-count').innerText   = okCount;
-
-        // Zero stock section
-        const zeroCard = document.getElementById('alrt-zero-card');
-        if(zeroList.length === 0) {
-            zeroCard.classList.add('hidden');
-        } else {
-            zeroCard.classList.remove('hidden');
-            document.getElementById('alrt-zero-list').innerHTML = zeroList.map(t => alertItemHTML(t, 'zero')).join('');
-        }
-
-        // Low stock section
-        const lowCard = document.getElementById('alrt-low-card');
-        if(lowList.length === 0) {
-            lowCard.classList.add('hidden');
-        } else {
-            lowCard.classList.remove('hidden');
-            document.getElementById('alrt-low-list').innerHTML = lowList.map(t => alertItemHTML(t, 'low')).join('');
-        }
-
-        // All clear
-        const allOkCard = document.getElementById('alrt-allok-card');
-        if(zeroList.length === 0 && lowList.length === 0) {
-            allOkCard.classList.remove('hidden');
-        } else {
-            allOkCard.classList.add('hidden');
-        }
-    }
-
-    function alertItemHTML(t, type) {
-        const pct = t.minLim > 0 ? Math.min(100, Math.round((t.avail / t.minLim) * 100)) : 0;
-        const barColor = type === 'zero' ? '#c62828' : '#e65100';
-        const barWidth = type === 'zero' ? 0 : pct;
-        return `
-        <div class="alert-item alert-item-${type}">
-            <div class="alert-item-top">
-                <div class="alert-item-name">🔧 ${esc(t.name)}</div>
-                <div class="alert-item-avail alert-avail-${type}">${t.avail <= 0 ? '⛔ ખાલી' : t.avail + ' બાકી'}</div>
-            </div>
-            <div class="alert-item-cat">📁 ${esc(t.cat)}</div>
-            <div class="alert-progress-bar">
-                <div class="alert-progress-fill" style="width:${barWidth}%;background:${barColor};"></div>
-            </div>
-            <div class="alert-item-stats">
-                <span>📦 કુલ: <b>${t.initial + t.purchased}</b></span>
-                <span>🔧 વપરાશ: <b>${t.used}</b></span>
-                <span>⚠️ Min: <b>${t.minLim}</b></span>
-                <span class="alert-avail-${type}">✅ બાકી: <b>${t.avail}</b></span>
-            </div>
-        </div>`;
-    }
-
 
     // ── EDIT / DELETE TRANSACTION ──
     function findTr(k) { var r = null; db.transactions.forEach(function(t){ if (t._k === k) r = t; }); return r; }
@@ -1227,11 +636,149 @@
         if (!canWrite()) return;
         safeWrite(ROOT.child('transactions').child(k).remove(), function(ok, msg){ if (!ok) alert('❌ ડીલીટ ન થયું: ' + msg); });
     }
+
+    var ROOT_PLACEHOLDER = 0;
+    function refreshAll() {
+        updateCategoryDropdown();
+        updateHistoryDropdowns();
+        updateStats();
+        refreshOpSelect();
+        renderMasterLists();
+        updateHistoryTable();
+        updateAlerts();
+        renderEntryTables();
+        if (curSec === 'report') updateAllReports();
+    }
+
+    // ── ડાબી પટ્ટી ──
+    function toggleRail() {
+        var o = document.body.classList.toggle('rail-open');
+        try { localStorage.setItem('rail', o ? '1' : '0'); } catch (e) {}
+    }
+    try { if (localStorage.getItem('rail') === '1') document.body.classList.add('rail-open'); } catch (e) {}
+
+    var SECTIONS = ['entry','alert','report','setting'];
+    var curSec = 'entry';
+    function showSec(name) {
+        curSec = name;
+        SECTIONS.forEach(function(s) {
+            $(s + '-sec').classList.add('hidden');
+            $('n-' + s).classList.remove('active');
+        });
+        $(name + '-sec').classList.remove('hidden');
+        $('n-' + name).classList.add('active');
+        $('sub-report').classList.toggle('open', name === 'report');
+        if (name === 'report') updateAllReports();
+        if (name === 'alert') updateAlerts();
+        window.scrollTo(0, 0);
+    }
+
+    // ── STATS (અલર્ટ બેજ) ──
+    function stockOf(t) {
+        var p = 0, out = 0;
+        db.transactions.forEach(function(tr) {
+            if (tr.tool !== t.name) return;
+            if (tr.subType === 'Purchase') p += (tr.qty || 0);
+            if (tr.type === 'OUT') out += (tr.qty || 0);
+        });
+        return (t.initialStock || 0) + p - out;
+    }
+    function updateStats() {
+        var low = db.tools.filter(function(t){ return stockOf(t) <= (t.minLimit || 0); }).length;
+        var lbl = $('n-alert-label');
+        if (low > 0) { lbl.innerHTML = 'અલર્ટ <span class="badge" style="margin-left:8px;background:var(--bad);color:#fff">' + low + '</span>'; $('n-alert').classList.add('has-alert'); }
+        else { lbl.innerText = 'અલર્ટ'; $('n-alert').classList.remove('has-alert'); }
+    }
+
+    // ── એન્ટ્રી ટેબલ ──
+    var sessionIds = {};
+    function trTime(tr) { if (!tr.id) return ''; var d = new Date(tr.id); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+    function deskTrRow(tr, mode) {
+        var isOut = tr.type === 'OUT';
+        var first = mode === 'time' ? trTime(tr) : (esc(tr.date) + ' <span class="muted">' + trTime(tr) + '</span>');
+        var acts = mode === 'ro' ? '' :
+            '<td class="nowrap"><button class="btn-sm btn-edit" onclick="editTransaction(\'' + tr._k + '\')" title="Edit">✏️</button> ' +
+            '<button class="btn-sm btn-del" onclick="deleteTransaction(\'' + tr._k + '\')" title="Delete">🗑️</button></td>';
+        return '<tr><td>' + first + '</td><td>' + esc(tr.op) + '</td><td><b>' + esc(tr.tool) + '</b></td>' +
+               '<td><span class="' + (isOut ? 'type-out' : 'type-in') + '">' + (isOut ? 'OUT' : 'IN') + '</span></td>' +
+               '<td><b>' + tr.qty + '</b></td>' + acts + '</tr>';
+    }
+    function renderEntryTables() {
+        var today = localDate();
+        var list = db.transactions.slice().sort(function(a,b){ return (b.id||0) - (a.id||0); });
+        var newList = list.filter(function(tr){ return sessionIds[tr.id] || tr.date === today; });
+        var empty = '<tr><td colspan="6" class="empty">કોઈ એન્ટ્રી નથી</td></tr>';
+        $('new-count').innerText = newList.length;
+        $('new-body').innerHTML = newList.map(function(tr){ return deskTrRow(tr, 'time'); }).join('') || empty;
+    }
+
+    // ── ઇતિહાસ ટેબલ (એન્ટ્રી પેજની જમણી બાજુ) ──
+    function updateHistoryTable() {
+        var selMonth = $('hist-month').value, selOp = $('hist-op').value || 'ALL', selTool = $('hist-tool').value || 'ALL';
+        var search = ($('hist-search').value || '').toLowerCase();
+        var filtered = db.transactions.filter(function(tr) {
+            return (!selMonth || String(tr.date).indexOf(selMonth) === 0) &&
+                   (selOp === 'ALL' || tr.op === selOp) && (selTool === 'ALL' || tr.tool === selTool) &&
+                   (String(tr.op).toLowerCase().indexOf(search) > -1 || String(tr.tool).toLowerCase().indexOf(search) > -1);
+        }).sort(function(a,b){ return (b.id||0) - (a.id||0); });
+        $('hist-count-badge').innerText = filtered.length + ' એન્ટ્રી';
+        $('hist-table-body').innerHTML = filtered.map(function(tr){ return deskTrRow(tr, 'date'); }).join('') ||
+            '<tr><td colspan="6" class="empty">કોઈ ઇતિહાસ નથી</td></tr>';
+    }
+
+    // ── અલર્ટ ટેબલ ──
+    function updateAlerts() {
+        var zero = [], low = [], ok = 0;
+        db.tools.slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); }).forEach(function(t) {
+            var mine = db.transactions.filter(function(tr){ return tr.tool === t.name; });
+            var pur = sumQty(mine.filter(function(tr){ return tr.subType === 'Purchase'; }));
+            var used = sumQty(mine.filter(function(tr){ return tr.type === 'OUT'; }));
+            var init = t.initialStock || 0, avail = init + pur - used, min = t.minLimit || 0;
+            var o = { name:t.name, cat:t.cat, total:init + pur, used:used, min:min, avail:avail };
+            if (avail <= 0) zero.push(o); else if (avail <= min) low.push(o); else ok++;
+        });
+        $('alrt-zero-count').innerText = zero.length;
+        $('alrt-low-count').innerText = low.length;
+        $('alrt-ok-count').innerText = ok;
+        $('alrt-zero-card').classList.toggle('hidden', !zero.length);
+        $('alrt-low-card').classList.toggle('hidden', !low.length);
+        $('alrt-allok-card').classList.toggle('hidden', !!(zero.length || low.length));
+        $('alrt-zero-list').innerHTML = zero.map(function(t){
+            return '<tr><td><b>' + esc(t.name) + '</b></td><td>' + esc(t.cat) + '</td><td>' + t.total + '</td><td>' + t.used + '</td><td>' + t.min + '</td><td><span class="stock-low">' + t.avail + ' ⛔</span></td></tr>';
+        }).join('');
+        $('alrt-low-list').innerHTML = low.map(function(t){
+            var pct = t.min > 0 ? Math.min(100, Math.round(t.avail / t.min * 100)) : 0;
+            return '<tr><td><b>' + esc(t.name) + '</b></td><td>' + esc(t.cat) + '</td><td>' + t.total + '</td><td>' + t.used + '</td><td>' + t.min + '</td><td><span class="stock-mid">' + t.avail + '</span></td>' +
+                   '<td><div class="bar"><i style="width:' + pct + '%;background:var(--warn)"></i></div></td></tr>';
+        }).join('');
+    }
+
+    // ── માસ્ટર ટેબલ (સેટિંગ્સ) ──
+    function renderMasterLists() {
+        $('op-list-display').innerHTML = db.operators.length
+            ? '<table><thead><tr><th style="width:40px">#</th><th>ઓપરેટર</th><th style="width:60px"></th></tr></thead><tbody>' +
+              db.operators.map(function(o,i){
+                  return '<tr><td>' + (i+1) + '</td><td><b>👤 ' + esc(o) + '</b></td><td><button class="btn-sm btn-del" onclick="deleteMaster(\'operators\',' + i + ')">✖</button></td></tr>';
+              }).join('') + '</tbody></table>'
+            : '<div class="empty">કોઈ ઓપરેટર નથી</div>';
+        $('tool-list-display').innerHTML = db.tools.length
+            ? '<table><thead><tr><th style="width:36px">#</th><th>ટૂલ</th><th>કેટેગરી</th><th>ઓ.સ્ટોક</th><th>Min</th><th>હાલની સિલક</th><th style="width:90px"></th></tr></thead><tbody>' +
+              db.tools.map(function(t,i){
+                  var st = stockOf(t), low = st <= (t.minLimit || 0);
+                  return '<tr class="master-item' + (i === highlightDupIndex ? ' duplicate-tool' : '') + '"><td>' + (i+1) + '</td>' +
+                      '<td><b>🔧 ' + esc(t.name) + '</b>' + (i === highlightDupIndex ? '<span class="dup-badge">⚠️ DUPLICATE</span>' : '') + '</td>' +
+                      '<td>' + esc(t.cat) + '</td><td>' + (t.initialStock || 0) + '</td><td>' + (t.minLimit || 0) + '</td>' +
+                      '<td><span class="' + (low ? 'stock-low' : 'stock-ok') + '">' + st + (low ? ' ⚠️' : '') + '</span></td>' +
+                      '<td class="nowrap"><button class="btn-sm btn-edit" onclick="editTool(' + i + ')">✏️</button> ' +
+                      '<button class="btn-sm btn-del" onclick="deleteMaster(\'tools\',' + i + ')">✖</button></td></tr>';
+              }).join('') + '</tbody></table>'
+            : '<div class="empty">કોઈ ટૂલ નથી</div>';
+    }
+
     function toggleTheme() {
         var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', t);
     }
-
     // ── REPORTS: one data builder used by screen view, PDF and print ──
     var repType = 'STOCK';
     var REP_TITLES = { STOCK:'📦 સિલક રિપોર્ટ', TOOLS:'🔧 ટૂલ લિસ્ટ', OPERATORS:'👤 ઓપરેટર રિપોર્ટ', HISTORY:'📋 વ્યવહાર રિપોર્ટ' };
@@ -1239,7 +786,7 @@
 
     function setRepType(t) {
         repType = t;
-        ['STOCK','TOOLS','OPERATORS','HISTORY'].forEach(function(x){ $('chip-' + x).className = 'chip' + (x === t ? ' active' : ''); });
+        ['STOCK','TOOLS','OPERATORS','HISTORY'].forEach(function(x){ $('chip-' + x).className = 'chip' + (x === t ? ' active' : ''); $('sub-' + x).className = 'sub-item' + (x === t ? ' active-sub' : ''); });
         $('f-month').style.display = (t === 'TOOLS') ? 'none' : '';
         $('f-op').style.display    = (t === 'OPERATORS' || t === 'HISTORY') ? '' : 'none';
         $('f-tool').style.display  = (t === 'OPERATORS') ? 'none' : '';
@@ -1355,6 +902,22 @@
         });
         $('rep-body').innerHTML = html || '<tr><td colspan="' + r.headG.length + '" style="text-align:center;color:var(--muted);padding:20px">કોઈ ડેટા નથી</td></tr>';
         $('rep-summary').innerText = r.summary;
+
+        // PC: બીજું ટેબલ – તારીખ/સમય મુજબ
+        if ($('rep-dt-body')) {
+            $('rep-grid').classList.toggle('single', repType === 'HISTORY');
+            var rows = db.transactions.filter(function(tr) {
+                return (!f.month || String(tr.date).substring(0, 7) === f.month) &&
+                       (f.op === 'ALL' || tr.op === f.op) && (f.tool === 'ALL' || tr.tool === f.tool) &&
+                       (f.cat === 'ALL' || tr.cat === f.cat);
+            }).sort(function(a,b){ return (b.date > a.date) ? 1 : (b.date < a.date ? -1 : (b.id||0) - (a.id||0)); });
+            var iss = 0, pur = 0;
+            rows.forEach(function(tr){ if (tr.type === 'OUT') iss++; else pur++; });
+            $('rep-dt-period').innerText = f.month ? 'મહિનો: ' + f.month : 'બધો સમય';
+            $('rep-dt-body').innerHTML = rows.map(function(tr){ return deskTrRow(tr, 'ro'); }).join('') ||
+                '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">કોઈ ડેટા નથી</td></tr>';
+            $('rep-dt-summary').innerText = 'કુલ: ' + rows.length + '  |  ઇશ્યૂ: ' + iss + '  |  ખરીદી: ' + pur;
+        }
     }
 
     // ── PDF ──
@@ -1430,6 +993,7 @@
     }
 
 
+
     // ── INIT ──
     $('t-date').value = localDate();
     $('rep-month').value = localDate().substring(0, 7);
@@ -1454,6 +1018,5 @@
     });
     window.addEventListener('appinstalled', function(){ installBtn.style.display = 'none'; });
 </script>
-<div class="toast" id="toast"></div>
 </body>
 </html>
