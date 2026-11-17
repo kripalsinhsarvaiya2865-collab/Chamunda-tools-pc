@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chamunda Eng Tools — PC</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#c62828">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #f0f2f5; --text: #1a1a2e; --card: #ffffff;
+            --nav: #ffffff; --pri: #c62828; --sec: #2e7d32;
+            --border: #e0e0e0; --muted: #7a7a8c;
+            --pri-light: #ffebee; --sec-light: #e8f5e9;
+            --shadow: 0 4px 16px rgba(0,0,0,0.08);
+            --radius: 16px;
+        }
+        [data-theme="dark"] {
+            --bg: #0d0d14; --text: #eaeaf5; --card: #1a1a2a;
+            --nav: #12121e; --pri: #ef5350; --sec: #4caf50;
+            --border: #2a2a3e; --muted: #9090a8;
+            --pri-light: rgba(239,83,80,0.1); --sec-light: rgba(76,175,80,0.1);
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            margin: 0; padding-bottom: 88px;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+            font-size: 16px;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--pri);
+            padding: 14px 16px 12px;
+            position: sticky; top: 0; z-index: 900;
+            box-shadow: 0 3px 16px rgba(198,40,40,0.35);
+        }
+        .header-row { display: flex; align-items: center; justify-content: space-between; }
+        .header h3 { margin: 0; color: #fff; font-size: 19px; font-weight: 800; letter-spacing: 0.3px; }
+        .header-sub { color: rgba(255,255,255,0.78); font-size: 12px; margin-top: 3px; font-weight: 500; }
+        #sync-status {
+            font-size: 12px; font-weight: 700;
+            background: rgba(255,255,255,0.18);
+            color: #fff; padding: 5px 12px; border-radius: 20px;
+            white-space: nowrap; letter-spacing: 0.3px;
+        }
+        #sync-status.online { background: rgba(76,175,80,0.55); }
+
+        /* ── CONTAINER ── */
+        .container { padding: 14px; max-width: 600px; margin: auto; }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            margin-bottom: 14px; padding: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 16px; font-weight: 800; color: var(--pri);
+            margin: 0 0 16px; padding-bottom: 12px;
+            border-bottom: 2px solid var(--pri-light);
+            display: flex; align-items: center; gap: 8px;
+            letter-spacing: 0.2px;
+        }
+
+        /* ── FORM ── */
+        label {
+            font-size: 12px; font-weight: 700; color: var(--muted);
+            display: block; margin-top: 14px; margin-bottom: 5px;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
+        input, select {
+            width: 100%; padding: 13px 15px;
+            border-radius: 11px; border: 2px solid var(--border);
+            background: var(--bg); color: var(--text);
+            font-size: 16px; outline: none;
+            transition: border 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        input:focus, select:focus {
+            border-color: var(--pri);
+            box-shadow: 0 0 0 3px var(--pri-light);
+        }
+        [data-theme="dark"] input,
+        [data-theme="dark"] select { background: #20202e; }
+
+        button {
+            width: 100%; padding: 15px; border-radius: 12px; border: none;
+            background: var(--pri); color: white;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; margin-top: 12px; letter-spacing: 0.3px;
+            font-family: inherit;
+        }
+        button:active { transform: scale(0.97); opacity: 0.88; }
+
+        /* ── MODE BUTTONS ── */
+        .mode-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+        .mode-btn {
+            padding: 16px 8px; border-radius: 14px;
+            border: 2.5px solid transparent;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            transition: all 0.2s; text-align: center; line-height: 1.5;
+            font-family: inherit;
+        }
+        .mode-btn .m-icon { font-size: 28px; display: block; margin-bottom: 5px; }
+        .mode-btn.active  { opacity: 1; box-shadow: 0 4px 16px rgba(0,0,0,0.18); border-color: currentColor; }
+        .mode-btn.inactive { opacity: 0.38; }
+        .btn-out { background: #ede7f6; color: #6a1b9a; }
+        .btn-in  { background: #e8f5e9; color: #2e7d32; }
+
+        /* ── SAVE BUTTON ── */
+        .btn-save {
+            background: linear-gradient(135deg, #2e7d32, #1b5e20);
+            font-size: 17px; padding: 17px; border-radius: 14px;
+            box-shadow: 0 5px 18px rgba(46,125,50,0.38); margin-top: 20px;
+        }
+
+        /* ── SMALL BUTTONS ── */
+        .btn-sm   { width:auto; padding:7px 13px; font-size:13px; margin:2px; border-radius:8px; margin-top:0; }
+        .btn-edit { background: #f57c00; }
+        .btn-del  { background: #c62828; }
+        .btn-sec  { background: #455a64; }
+
+        /* ── BOTTOM NAV ── */
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; background: var(--nav);
+            display: flex; border-top: 1.5px solid var(--border);
+            height: 76px; box-shadow: 0 -6px 24px rgba(0,0,0,0.12); z-index: 800;
+        }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            cursor: pointer; gap: 4px; color: var(--muted);
+            font-size: 11px; font-weight: 600; transition: all 0.2s;
+            letter-spacing: 0.2px; padding-top: 2px;
+        }
+        .nav-icon { font-size: 24px; line-height: 1; }
+        .nav-item.active-nav {
+            color: var(--pri);
+            border-top: 3px solid var(--pri);
+            background: var(--pri-light);
+        }
+
+        /* ── TABLE ── */
+        .hidden { display: none; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 300px; }
+        th, td { padding: 11px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+        th {
+            background: var(--pri-light); color: var(--pri);
+            font-size: 11px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            position: sticky; top: 0;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(0,0,0,0.02); }
+        [data-theme="dark"] tr:hover td { background: rgba(255,255,255,0.03); }
+
+        /* ── MASTER ITEM ── */
+        .master-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 4px; border-bottom: 1px solid var(--border);
+        }
+        .master-item:last-child { border-bottom: none; }
+        .master-item-info { display: flex; flex-direction: column; gap: 4px; }
+        .master-item-name { font-size: 15px; font-weight: 700; }
+        .master-item-sub  { font-size: 12px; color: var(--muted); }
+        .action-btns { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* ── SEARCH DROPDOWN ── */
+        .search-container { position: relative; }
+        .search-results {
+            position: absolute; background: var(--card); width: 100%;
+            border: 2px solid var(--pri); z-index: 200;
+            max-height: 200px; overflow-y: auto;
+            border-radius: 12px; display: none;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.18); top: calc(100% + 5px);
+        }
+        .search-results div {
+            padding: 13px 15px; cursor: pointer;
+            border-bottom: 1px solid var(--border); font-size: 15px;
+        }
+        .search-results div:last-child { border-bottom: none; }
+        .search-results div:hover { background: var(--pri-light); }
+
+        /* ── FILTER / PDF ── */
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pdf-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pdf-btns button { font-size: 14px; padding: 14px 6px; border-radius: 12px; margin-top: 0; }
+        .btn-pdf1 { background: linear-gradient(135deg,#0097a7,#006064); }
+        .btn-pdf2 { background: linear-gradient(135deg,#ad1457,#880e4f); }
+        .btn-pdf3 { background: linear-gradient(135deg,#f57c00,#bf360c); }
+        .btn-pdf4 { background: linear-gradient(135deg,#2e7d32,#1b5e20); }
+        .btn-theme {
+            background: linear-gradient(135deg,#37474f,#263238);
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            font-size: 16px;
+        }
+
+        /* ── STOCK BADGES ── */
+        .stock-ok  {
+            display:inline-block; background: var(--sec-light); color: var(--sec);
+            border-radius:8px; padding:3px 10px; font-weight:800; font-size:14px;
+        }
+        .stock-low {
+            display:inline-block; background: var(--pri-light); color: #c62828;
+            border-radius:8px; padding:3px 10px; font-weight:800; font-size:14px;
+        }
+        .type-out {
+            display: inline-block;
+            background:#ede7f6; color:#6a1b9a; border-radius:6px;
+            padding:2px 8px; font-size:11px; font-weight:800;
+        }
+        .type-in  {
+            display: inline-block;
+            background: var(--sec-light); color: var(--sec); border-radius:6px;
+            padding:2px 8px; font-size:11px; font-weight:800;
+        }
+
+        /* ── DUPLICATE ── */
+        .duplicate-tool { background: rgba(255,193,7,0.12) !important; border-left: 4px solid #ffc107 !important; }
+        .dup-badge { background:#ffc107; color:#000; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; margin-left:6px; }
+
+        /* ── TWO-COL INPUT ── */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* ── EDIT MODAL ── */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); z-index: 1000;
+            align-items: flex-end; justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--card); width: 100%; max-width: 500px;
+            border-radius: 22px 22px 0 0; padding: 24px 18px 36px;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+            animation: slideUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-title {
+            font-size: 17px; font-weight: 800; color: var(--pri);
+            margin: 0 0 18px; padding-bottom: 14px;
+            border-bottom: 2px solid var(--pri-light);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .modal-close {
+            margin-left: auto; background: var(--border); color: var(--text);
+            width: 32px; height: 32px; border-radius: 50%; border: none;
+            font-size: 16px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; padding: 0;
+        }
+        .btn-update {
+            background: linear-gradient(135deg, #f57c00, #e65100);
+            box-shadow: 0 5px 18px rgba(245,124,0,0.38);
+            margin-top: 18px; border-radius: 14px; padding: 16px;
+        }
+
+        /* ── HISTORY SECTION SPECIFIC ── */
+        .history-filter-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin-bottom: 2px;
+        }
+        .history-count-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--pri-light); color: var(--pri);
+            border-radius: 20px; padding: 4px 12px;
+            font-size: 12px; font-weight: 700; margin-left: auto;
+        }
+
+        /* ── HISTORY CARD LIST ── */
+        .hist-item {
+            padding: 11px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .hist-item:last-child { border-bottom: none; }
+        .hist-top-row {
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 8px;
+        }
+        .hist-tool-name {
+            font-size: 15px; font-weight: 700;
+            flex: 1; line-height: 1.3;
+        }
+        .hist-qty {
+            font-size: 20px; font-weight: 800;
+            color: var(--pri); white-space: nowrap;
+        }
+        .hist-bottom-row {
+            display: flex; align-items: center;
+            justify-content: space-between; gap: 6px;
+        }
+        .hist-meta {
+            display: flex; align-items: center;
+            gap: 6px; flex-wrap: wrap;
+        }
+        .hist-date { font-size: 12px; color: var(--muted); font-weight: 600; }
+        .hist-op   { font-size: 12px; color: var(--muted); }
+        .hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .hist-btn {
+            width: 34px; height: 34px; border-radius: 9px;
+            border: none; cursor: pointer; font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0; margin: 0;
+        }
+        .hist-btn-edit { background: #fff3e0; color: #e65100; }
+        .hist-btn-del  { background: #ffebee; color: #c62828; }
+        [data-theme="dark"] .hist-btn-edit { background: rgba(230,81,0,0.18); color: #ff8a50; }
+        [data-theme="dark"] .hist-btn-del  { background: rgba(198,40,40,0.18); color: #ef9a9a; }
+
+        /* ── STATS ROW ── */
+        .stats-row {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stat-box {
+            background: var(--card); border-radius: 14px; padding: 14px 10px;
+            text-align: center; border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .stat-num { font-size: 22px; font-weight: 800; color: var(--pri); line-height: 1.1; }
+        .stat-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 3px; }
+
+        /* ── ALERT SECTION ── */
+        .alert-summary-row {
+            display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+            margin-bottom: 14px;
+        }
+        .alert-sum-box {
+            border-radius: 14px; padding: 16px 8px; text-align: center;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .alert-sum-zero { background: #ffebee; border-color: #ef9a9a; }
+        .alert-sum-low  { background: #fff3e0; border-color: #ffcc80; }
+        .alert-sum-ok   { background: #e8f5e9; border-color: #a5d6a7; }
+        [data-theme="dark"] .alert-sum-zero { background: rgba(198,40,40,0.15); border-color: rgba(198,40,40,0.3); }
+        [data-theme="dark"] .alert-sum-low  { background: rgba(230,81,0,0.15);  border-color: rgba(230,81,0,0.3); }
+        [data-theme="dark"] .alert-sum-ok   { background: rgba(46,125,50,0.15); border-color: rgba(46,125,50,0.3); }
+        .alert-sum-num  { font-size: 26px; font-weight: 800; line-height: 1.1; }
+        .alert-sum-zero .alert-sum-num { color: #c62828; }
+        .alert-sum-low  .alert-sum-num { color: #e65100; }
+        .alert-sum-ok   .alert-sum-num { color: #2e7d32; }
+        .alert-sum-lbl  { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 4px; }
+
+        /* Alert items */
+        .alert-item {
+            border-radius: 12px; padding: 14px;
+            margin-bottom: 10px; border: 1.5px solid;
+        }
+        .alert-item:last-child { margin-bottom: 0; }
+        .alert-item-zero { background: #fff5f5; border-color: #ffcdd2; }
+        .alert-item-low  { background: #fff8f0; border-color: #ffe0b2; }
+        [data-theme="dark"] .alert-item-zero { background: rgba(198,40,40,0.1);  border-color: rgba(198,40,40,0.25); }
+        [data-theme="dark"] .alert-item-low  { background: rgba(230,81,0,0.1);   border-color: rgba(230,81,0,0.25); }
+        .alert-item-top {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 8px; margin-bottom: 4px;
+        }
+        .alert-item-name { font-size: 15px; font-weight: 800; flex: 1; }
+        .alert-item-avail { font-size: 14px; font-weight: 800; white-space: nowrap; }
+        .alert-avail-zero { color: #c62828; }
+        .alert-avail-low  { color: #e65100; }
+        .alert-item-cat   { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+        .alert-progress-bar {
+            width: 100%; height: 7px; background: var(--border);
+            border-radius: 6px; overflow: hidden; margin-bottom: 10px;
+        }
+        .alert-progress-fill { height: 100%; border-radius: 6px; transition: width 0.4s; }
+        .alert-item-stats {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 5px 10px; font-size: 13px; color: var(--text);
+        }
+        .alert-item-stats span { white-space: nowrap; }
+
+        /* Nav alert dot */
+        .nav-alert-dot {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #c62828; color: #fff;
+            font-size: 10px; font-weight: 800;
+            width: 18px; height: 18px; border-radius: 50%;
+            margin-left: 2px; vertical-align: middle;
+        }
+        .has-alert { color: #c62828 !important; }
+        .has-alert .nav-icon::after {
+            content: ''; display: block; width: 8px; height: 8px;
+            background: #c62828; border-radius: 50%;
+            position: absolute; top: 8px; right: calc(50% - 14px);
+            border: 2px solid var(--nav);
+        }
+        .nav-item { position: relative; }
+
+        /* ── SECTION DIVIDER ── */
+        .sec-label {
+            font-size: 11px; font-weight: 800; color: var(--muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 18px 0 10px; padding-left: 4px;
+        }
+    
+        #sync-status.offline { background: rgba(0,0,0,0.45); }
+        .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px);
+            background: #2e7d32; color: #fff; padding: 11px 18px; border-radius: 24px; font-weight: 700; font-size: 14px;
+            opacity: 0; pointer-events: none; transition: all .25s; z-index: 2000; max-width: 90%; text-align: center; }
+        .toast.bad { background: #c62828; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        button:disabled { opacity: .6; }
+
+        .rep-chips { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+        .chip { background: var(--card, #fff); color: var(--text, #222); border: 2px solid #c62828; border-radius: 12px;
+                padding: 12px 6px; font-size: 14px; font-weight: 800; margin: 0; width: auto; box-shadow: none; }
+        .chip.active { background: linear-gradient(135deg,#d32f2f,#b71c1c); color:#fff; }
+        .mini-btn { background: transparent; color: var(--muted, #777); border: 1px dashed var(--muted, #999); border-radius: 10px;
+                padding: 8px; font-size: 12px; margin-top: 10px; box-shadow: none; }
+        .rep-period { font-size: 12px; color: var(--muted); margin: -4px 0 8px; font-weight: 700; }
+        .rep-summary { margin-top: 10px; padding: 10px; background: rgba(128,128,128,0.12); border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; }
+        @media print {
+            body * { visibility: hidden !important; }
+            #rep-view-card, #rep-view-card * { visibility: visible !important; }
+            #rep-view-card { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; }
+            .bottom-nav, .toast, .no-print { display: none !important; }
+        }
+
+        @media (min-width: 900px) {
+            .container { max-width: 980px; }
+            .stats-row { gap: 16px; }
+        }
+    
+        #install-btn { display:none; background:rgba(255,255,255,0.95); color:#c62828; border:none; border-radius:20px;
+            font-size:12px; font-weight:800; padding:6px 12px; margin:0 0 0 8px; width:auto; cursor:pointer; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="header-row">
+        <div>
+            <h3>⚙️ Chamunda Eng Tools</h3>
+            <div class="header-sub">Shri Chamunda CNC Workshop</div>
+        </div>
+        <div style="display:flex;align-items:center;"><div id="sync-status">Connecting...</div><button id="install-btn">⬇ Install</button></div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- ══ ENTRY SECTION ══ -->
+    <div id="entry-sec">
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-num" id="stat-tools">–</div>
+                <div class="stat-label">🔧 ટૂલ</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-txn">–</div>
+                <div class="stat-label">📋 ટ્રાન્ઝ.</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="stat-low" style="color:#c62828">–</div>
+                <div class="stat-label">⚠️ Low Stock</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">✒️ નવી એન્ટ્રી</div>
+
+            <label>તારીખ</label>
+            <input type="date" id="t-date">
+
+            <label>ટ્રાન્ઝેક્શન પ્રકાર</label>
+            <div class="mode-btns">
+                <div class="mode-btn btn-out active" id="btnOut" onclick="setMode('OUT')">
+                    <span class="m-icon">🔧</span>
+                    Tool Out<br><small>વપરાશ / Issue</small>
+                </div>
+                <div class="mode-btn btn-in inactive" id="btnIn" onclick="setMode('PURCHASE')">
+                    <span class="m-icon">📦</span>
+                    Purchase<br><small>નવી ખરીદી</small>
+                </div>
+            </div>
+
+            <div id="entry-fields"></div>
+
+            <button class="btn-save" id="save-btn" onclick="saveTransaction()">✅ સેવ કરો</button>
+        </div>
+    </div>
+
+    <!-- ══ HISTORY SECTION ══ -->
+    <div id="history-sec" class="hidden">
+        <div class="card">
+            <div class="card-title">🔍 ઇતિહાસ ફિલ્ટર</div>
+            <div class="history-filter-row">
+                <div>
+                    <label>મહિનો</label>
+                    <input type="month" id="hist-month" onchange="updateHistoryTable()">
+                </div>
+                <div>
+                    <label>ઓપ / સ.</label>
+                    <select id="hist-op" onchange="onHistFilter('op')"></select>
+                </div>
+            </div>
+            <div>
+                <label>🔧 ટૂલ ફિલ્ટર</label>
+                <select id="hist-tool" onchange="onHistFilter('tool')"></select>
+            </div>
+            <label>🔎 શોધ (નામ / ટૂલ)</label>
+            <input type="text" id="hist-search" placeholder="ટાઈપ કરો..." oninput="updateHistoryTable()">
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                🕒 ઇતિહાસ
+                <span class="history-count-badge" id="hist-count-badge">0 એન્ટ્રી</span>
+            </div>
+            <div id="history-body-main"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📥 ઇતિહાસ PDF</div>
+            <button class="btn-pdf1" onclick="downloadPDF('HISTORY')" style="margin-top:0;">📋 વ્યવહાર PDF ડાઉનલોડ</button>
+        </div>
+    </div>
+
+    <!-- ══ REPORT SECTION ══ -->
+    <div id="report-sec" class="hidden">
+        <div class="card">
+            <div class="card-title">📊 રિપોર્ટ પસંદ કરો</div>
+            <div class="rep-chips">
+                <button id="chip-STOCK" class="chip active" onclick="setRepType('STOCK')">📦 સિલક</button>
+                <button id="chip-TOOLS" class="chip" onclick="setRepType('TOOLS')">🔧 ટૂલ લિસ્ટ</button>
+                <button id="chip-OPERATORS" class="chip" onclick="setRepType('OPERATORS')">👤 ઓપરેટર</button>
+                <button id="chip-HISTORY" class="chip" onclick="setRepType('HISTORY')">📋 વ્યવહાર</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔍 ફિલ્ટર</div>
+            <div class="filter-grid">
+                <div id="f-month">
+                    <label>મહિનો</label>
+                    <input type="month" id="rep-month" onchange="updateAllReports()">
+                </div>
+                <div id="f-cat">
+                    <label>કેટેગરી</label>
+                    <select id="rep-cat" onchange="updateAllReports()"></select>
+                </div>
+            </div>
+            <div id="f-tool">
+                <label>🔧 ટૂલ</label>
+                <select id="rep-tool" onchange="updateAllReports()"></select>
+            </div>
+            <div id="f-op">
+                <label>👤 ઓપરેટર / સપ્લાયર</label>
+                <select id="rep-op" onchange="updateAllReports()"></select>
+            </div>
+            <button class="mini-btn" onclick="clearRepFilters()">✖ ફિલ્ટર સાફ કરો</button>
+        </div>
+
+        <div class="card table-responsive" id="rep-view-card">
+            <div class="card-title" id="rep-title">📦 સિલક રિપોર્ટ</div>
+            <div id="rep-period" class="rep-period"></div>
+            <table>
+                <thead id="rep-head"></thead>
+                <tbody id="rep-body"></tbody>
+            </table>
+            <div id="rep-summary" class="rep-summary"></div>
+        </div>
+
+        <div class="card no-print">
+            <div class="pdf-btns">
+                <button class="btn-pdf2" onclick="downloadReport()" style="margin-top:0;">📥 PDF ડાઉનલોડ</button>
+                <button class="btn-pdf3" onclick="window.print()" style="margin-top:0;">🖨 પ્રિન્ટ (ગુજરાતી)</button>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">
+                ગુજરાતી નામ PDF માં બરાબર ન દેખાય તો "પ્રિન્ટ" દબાવી "Save as PDF" પસંદ કરો.
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ ALERT SECTION ══ -->
+    <div id="alert-sec" class="hidden">
+
+        <!-- Summary cards -->
+        <div class="alert-summary-row">
+            <div class="alert-sum-box alert-sum-zero">
+                <div class="alert-sum-num" id="alrt-zero-count">0</div>
+                <div class="alert-sum-lbl">⛔ ખાલી</div>
+            </div>
+            <div class="alert-sum-box alert-sum-low">
+                <div class="alert-sum-num" id="alrt-low-count">0</div>
+                <div class="alert-sum-lbl">⚠️ Low Stock</div>
+            </div>
+            <div class="alert-sum-box alert-sum-ok">
+                <div class="alert-sum-num" id="alrt-ok-count">0</div>
+                <div class="alert-sum-lbl">✅ ઓકે</div>
+            </div>
+        </div>
+
+        <!-- Zero stock -->
+        <div class="card" id="alrt-zero-card">
+            <div class="card-title" style="color:#b71c1c;">⛔ સ્ટોક ખાલી છે</div>
+            <div id="alrt-zero-list"></div>
+        </div>
+
+        <!-- Low stock -->
+        <div class="card" id="alrt-low-card">
+            <div class="card-title" style="color:#e65100;">⚠️ Low Stock — મર્યાદા કરતાં ઓછો</div>
+            <div id="alrt-low-list"></div>
+        </div>
+
+        <!-- All-clear -->
+        <div class="card hidden" id="alrt-allok-card">
+            <div style="text-align:center;padding:28px 0;">
+                <div style="font-size:52px;">✅</div>
+                <div style="font-size:17px;font-weight:800;color:var(--sec);margin-top:10px;">બધો સ્ટોક ઓકે છે!</div>
+                <div style="font-size:13px;color:var(--muted);margin-top:6px;">કોઈ ટૂલ Low અથવા ખાલી નથી</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══ SETTINGS SECTION ══ -->
+    <div id="setting-sec" class="hidden">
+
+        <div class="card">
+            <div class="card-title">🌗 થીમ</div>
+            <button class="btn-theme" onclick="toggleTheme()">🌙 Dark &nbsp;/&nbsp; ☀️ Light Mode</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">👤 ઓપરેટર માસ્ટર</div>
+            <label>ઓપરેટર નામ</label>
+            <input type="text" id="new-op" placeholder="ઉદા: Ramesh, Suresh...">
+            <button onclick="addOperator()" style="background:var(--sec);">+ ઓપરેટર ઉમેરો</button>
+            <div id="op-list-display" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title" id="tool-master-title">🛠️ ટૂલ માસ્ટર</div>
+            <input type="hidden" id="edit-tool-index" value="-1">
+
+            <label>ટૂલ નામ</label>
+            <input type="text" id="new-tool" placeholder="ઉદા: VNMG Insert, Boring Bar">
+
+            <label>કેટેગરી</label>
+            <input type="text" id="new-cat" placeholder="ઉદા: Boring, Insert, Drill">
+
+            <div class="two-col">
+                <div>
+                    <label>ઓપનિંગ સ્ટોક</label>
+                    <input type="number" id="new-stock" placeholder="0" min="0">
+                </div>
+                <div>
+                    <label>મિનિ. એલર્ટ</label>
+                    <input type="number" id="min-limit" placeholder="0" min="0">
+                </div>
+            </div>
+
+            <button id="tool-btn" onclick="addToolMaster()">+ ટૂલ ઉમેરો</button>
+            <button id="cancel-edit" class="hidden btn-sec" onclick="cancelToolEdit()">✖ કેન્સલ</button>
+
+            <div id="tool-list-display" style="margin-top:14px;"></div>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<!-- EDIT TRANSACTION MODAL -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+    <div class="modal-box">
+        <div class="modal-title">
+            ✏️ વ્યવહાર સુધારો
+            <button class="modal-close" onclick="closeEditModal()">✕</button>
+        </div>
+        <input type="hidden" id="edit-tr-id">
+        <label>તારીખ</label>
+        <input type="date" id="edit-tr-date">
+        <label>ઓપરેટર / સપ્લાયર</label>
+        <input type="text" id="edit-tr-op">
+        <label>ટૂલ નામ</label>
+        <input type="text" id="edit-tr-tool" readonly style="opacity:0.55;">
+        <label>નંગ (Quantity)</label>
+        <input type="number" id="edit-tr-qty" min="1">
+        <button class="btn-update" onclick="saveEditTransaction()">✔ અપડેટ કરો</button>
+    </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+    <div class="nav-item active-nav" id="n-entry" onclick="showSec('entry')">
+        <span class="nav-icon">✒️</span>એન્ટ્રી
+    </div>
+    <div class="nav-item" id="n-history" onclick="showSec('history')">
+        <span class="nav-icon">🕒</span>ઇતિહાસ
+    </div>
+    <div class="nav-item" id="n-alert" onclick="showSec('alert')">
+        <span class="nav-icon">🔔</span><span id="n-alert-label">અલર્ટ</span>
+    </div>
+    <div class="nav-item" id="n-report" onclick="showSec('report')">
+        <span class="nav-icon">📊</span>રિપોર્ટ
+    </div>
+    <div class="nav-item" id="n-setting" onclick="showSec('setting')">
+        <span class="nav-icon">⚙️</span>સેટિંગ્સ
+    </div>
+</nav>
+
+<script>
+
+    var FULL = true;
+    var firebaseConfig = {
+        apiKey: "AIzaSyCsqhpmQDF0X6ssqTxQ_p2d15VZDJMcE0g",
+        authDomain: "prakashbhaitools.firebaseapp.com",
+        projectId: "prakashbhaitools",
+        storageBucket: "prakashbhaitools.firebasestorage.app",
+        messagingSenderId: "362668027589",
+        appId: "1:362668027589:web:abb83273896edba9910aac",
+        databaseURL: "https://prakashbhaitools-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+    var ROOT = database.ref('tools_data');
+
+    var db = { operators:[], opKeys:[], tools:[], transactions:[] };
+    var loaded = false, connected = false, saving = false;
+    var currentMode = 'OUT';
+    var highlightDupIndex = -1;
+
+    function $(id) { return document.getElementById(id); }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function localDate() { var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+    function toast(msg, bad) {
+        var t = $('toast');
+        t.innerText = msg;
+        t.className = 'toast show' + (bad ? ' bad' : '');
+        clearTimeout(toast._t);
+        toast._t = setTimeout(function(){ t.className = 'toast'; }, 2200);
+    }
+
+    // ── CONNECTION STATUS ──
+    function updateStatus() {
+        var el = $('sync-status');
+        if (!connected) { el.innerText = '⚠️ Offline'; el.className = 'offline'; }
+        else if (!loaded) { el.innerText = 'Loading...'; el.className = ''; }
+        else { el.innerText = '✅ Online'; el.className = 'online'; }
+    }
+    function startListeners() {
+    database.ref('.info/connected').on('value', function(s) { connected = (s.val() === true); updateStatus(); });
+
+    // ── LOAD DATA (each item is read by its own key, so nothing is ever overwritten wholesale) ──
+    function readList(snap, child) {
+        var out = [];
+        snap.child(child).forEach(function(c) {
+            var v = c.val();
+            if (v !== null && v !== undefined) out.push({ k: c.key, v: v });
+            return false;
+        });
+        return out;
+    }
+    ROOT.on('value', function(snap) {
+        var ops = readList(snap, 'operators');
+        db.operators = ops.map(function(x){ return String(x.v); });
+        db.opKeys    = ops.map(function(x){ return x.k; });
+        db.tools = readList(snap, 'tools').map(function(x){ var t = x.v; t._k = x.k; return t; });
+        db.transactions = readList(snap, 'transactions').map(function(x){ var t = x.v; t._k = x.k; return t; });
+        db.transactions.sort(function(a,b){ return (a.id||0) - (b.id||0); });
+        loaded = true;
+        updateStatus();
+        refreshAll();
+    }, function(err) {
+        toast('ડેટા લોડ થયો નહીં: ' + (err && err.message ? err.message : ''), true);
+    });
+    }
+
+    function refreshAll() {
+        updateCategoryDropdown();
+        updateAllReports();
+        updateStats();
+        refreshOpSelect();
+        if (FULL) {
+            renderMasterLists();
+            updateHistoryDropdowns();
+            updateHistoryTable();
+            updateAlerts();
+        }
+    }
+
+    // ── SAFE WRITE: confirms only when the server really accepted it ──
+    function canWrite() {
+        if (!loaded) { alert('⏳ ડેટા હજી લોડ થઈ રહ્યો છે, થોડી વાર રાહ જુઓ.'); return false; }
+        if (!connected) { alert('📵 ઇન્ટરનેટ નથી! એન્ટ્રી સેવ થઈ નથી. નેટ ચાલુ કરીને ફરી પ્રયત્ન કરો.'); return false; }
+        return true;
+    }
+    function safeWrite(promise, cb) {
+        var done = false;
+        var timer = setTimeout(function() { if (!done) { done = true; cb(false, 'timeout'); } }, 12000);
+        promise.then(function() {
+            if (done) return; done = true; clearTimeout(timer); cb(true);
+        }, function(e) {
+            if (done) return; done = true; clearTimeout(timer); cb(false, e && e.message ? e.message : 'error');
+        });
+    }
+
+    // ── SHOW SECTION ──
+    var SECTIONS = ['entry','history','alert','report','setting'];
+    function showSec(name) {
+        SECTIONS.forEach(function(s) {
+            $(s + '-sec').classList.add('hidden');
+            $('n-' + s).classList.remove('active-nav');
+        });
+        $(name + '-sec').classList.remove('hidden');
+        $('n-' + name).classList.add('active-nav');
+        if (name === 'report')  updateAllReports();
+        if (FULL && name === 'history') { updateHistoryDropdowns(); updateHistoryTable(); }
+        if (FULL && name === 'alert')   updateAlerts();
+        window.scrollTo(0, 0);
+    }
+
+    // ── STATS ──
+    function stockOf(t) {
+        var p = 0, out = 0;
+        db.transactions.forEach(function(tr) {
+            if (tr.tool !== t.name) return;
+            if (tr.subType === 'Purchase') p += (tr.qty || 0);
+            if (tr.type === 'OUT') out += (tr.qty || 0);
+        });
+        return (t.initialStock || 0) + p - out;
+    }
+    function updateStats() {
+        $('stat-tools').innerText = db.tools.length;
+        $('stat-txn').innerText = db.transactions.length;
+        var low = db.tools.filter(function(t){ return stockOf(t) <= (t.minLimit || 0); }).length;
+        $('stat-low').innerText = low;
+        if (FULL) {
+            var lbl = $('n-alert-label');
+            if (low > 0) { lbl.innerHTML = 'અલર્ટ <span class="nav-alert-dot">' + low + '</span>'; $('n-alert').classList.add('has-alert'); }
+            else { lbl.innerText = 'અલર્ટ'; $('n-alert').classList.remove('has-alert'); }
+        }
+    }
+
+    // ── ENTRY ──
+    function opOptionsHtml() {
+        return db.operators.length
+            ? db.operators.map(function(o){ return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('')
+            : '<option value="">-- ઓપરેટર ઉમેરો --</option>';
+    }
+    function refreshOpSelect() {
+        var sel = $('sel-op');
+        if (!sel || currentMode !== 'OUT' || sel.tagName !== 'SELECT') return;
+        var prev = sel.value;
+        sel.innerHTML = opOptionsHtml();
+        if (prev) sel.value = prev;
+    }
+    function setMode(mode) {
+        currentMode = mode;
+        $('btnOut').className = 'mode-btn btn-out ' + (mode === 'OUT' ? 'active' : 'inactive');
+        $('btnIn').className  = 'mode-btn btn-in  ' + (mode === 'PURCHASE' ? 'active' : 'inactive');
+        var html = mode === 'OUT'
+            ? '<label>ઓપરેટર</label><select id="sel-op">' + opOptionsHtml() + '</select>'
+            : '<label>સપ્લાયર / નોંધ</label><input type="text" id="sel-op" value="STOCK PURCHASE">';
+        html += '<label>ટૂલ શોધો / પસંદ કરો</label>' +
+                '<div class="search-container">' +
+                '<input type="text" id="tool-search" placeholder="ટૂલ નામ ટાઈપ કરો..." oninput="filterTools(this.value)" autocomplete="off">' +
+                '<div id="search-res" class="search-results"></div></div>' +
+                '<label>નંગ (Quantity)</label><input type="number" id="sel-qty" value="1" min="1" inputmode="numeric">';
+        $('entry-fields').innerHTML = html;
+    }
+    function filterTools(val) {
+        var res = $('search-res');
+        val = (val || '').trim().toLowerCase();
+        if (!val) { res.style.display = 'none'; return; }
+        var html = '';
+        db.tools.forEach(function(t, i) {
+            if (String(t.name).toLowerCase().indexOf(val) > -1)
+                html += '<div onclick="selectToolIdx(' + i + ')"><b>' + esc(t.name) + '</b> <small style="color:var(--muted)">(' + esc(t.cat) + ')</small></div>';
+        });
+        res.innerHTML = html || '<div style="color:var(--muted)">ટૂલ મળ્યું નહીં</div>';
+        res.style.display = 'block';
+    }
+    function selectToolIdx(i) {
+        var t = db.tools[i]; if (!t) return;
+        $('tool-search').value = t.name;
+        $('search-res').style.display = 'none';
+    }
+    document.addEventListener('click', function(e) {
+        var r = $('search-res');
+        if (r && e.target.id !== 'tool-search' && !r.contains(e.target)) r.style.display = 'none';
+    });
+
+    function saveTransaction() {
+        if (saving) return;
+        if (!canWrite()) return;
+        var date  = $('t-date').value;
+        var op    = ($('sel-op').value || '').trim();
+        var typed = ($('tool-search').value || '').trim().toLowerCase();
+        var qty   = parseInt($('sel-qty').value, 10);
+        if (!date || !typed || !op || !qty || qty < 1) return alert('⚠️ બધી વિગત ભરો!');
+        var toolData = null;
+        db.tools.forEach(function(t){ if (String(t.name).trim().toLowerCase() === typed) toolData = t; });
+        if (!toolData) return alert('⚠️ આ ટૂલ માસ્ટરમાં નથી! લિસ્ટમાંથી ટૂલ પસંદ કરો.');
+
+        var tr = {
+            id: Date.now(), date: date, month: date.substring(0, 7),
+            type: currentMode, op: op, tool: toolData.name, cat: toolData.cat, qty: qty,
+            subType: currentMode === 'PURCHASE' ? 'Purchase' : 'Issue'
+        };
+        var btn = $('save-btn');
+        saving = true; btn.disabled = true; btn.innerText = '⏳ સેવ થઈ રહ્યું છે...';
+        var ref = ROOT.child('transactions').push();
+        safeWrite(ref.set(tr), function(ok, msg) {
+            saving = false; btn.disabled = false; btn.innerText = '✅ સેવ કરો';
+            if (ok) {
+                toast('✅ એન્ટ્રી સેવ થઈ ગઈ: ' + tr.tool + ' × ' + tr.qty);
+                $('tool-search').value = ''; $('sel-qty').value = 1; $('search-res').style.display = 'none';
+            } else if (msg === 'timeout') {
+                alert('⚠️ સેવ થયાની ખાતરી નથી (નેટ ધીમું છે). ફરી એન્ટ્રી કરતા પહેલાં ' + (FULL ? 'ઇતિહાસ' : 'રિપોર્ટ') + ' ચેક કરો.');
+            } else {
+                alert('❌ એન્ટ્રી સેવ ન થઈ: ' + msg);
+            }
+        });
+    }
+
+    // ── DROPDOWNS (keep the user's selection when data refreshes) ──
+    function setOptions(id, html) {
+        var el = $(id); if (!el) return;
+        var prev = el.value;
+        el.innerHTML = html;
+        if (prev) el.value = prev;
+        if (el.value !== prev) el.value = 'ALL';
+    }
+    function updateCategoryDropdown() {
+        var seen = {}, html = '<option value="ALL">બધી કેટેગરી</option>';
+        db.tools.forEach(function(t){ if (t.cat && !seen[t.cat]) { seen[t.cat] = 1; html += '<option value="' + esc(t.cat) + '">' + esc(t.cat) + '</option>'; } });
+        setOptions('rep-cat', html);
+        var th = '<option value="ALL">બધા ટૂલ</option>';
+        db.tools.slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); })
+            .forEach(function(t){ th += '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>'; });
+        setOptions('rep-tool', th);
+        var oh = '<option value="ALL">બધા</option>';
+        db.operators.forEach(function(o){ oh += '<option value="' + esc(o) + '">' + esc(o) + '</option>'; });
+        setOptions('rep-op', oh);
+    }
+    function updateHistoryDropdowns() {
+        var oh = '<option value="ALL">બધા ઓપ./સ.</option>';
+        db.operators.forEach(function(o){ oh += '<option value="' + esc(o) + '">' + esc(o) + '</option>'; });
+        setOptions('hist-op', oh);
+        var th = '<option value="ALL">બધા ટૂલ</option>';
+        db.tools.slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); })
+            .forEach(function(t){ th += '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>'; });
+        setOptions('hist-tool', th);
+    }
+
+    // ── OPERATORS ──
+    function addOperator() {
+        var val = $('new-op').value.trim();
+        if (!val) return;
+        if (!canWrite()) return;
+        if (db.operators.indexOf(val) > -1) return alert('⚠️ આ ઓપરેટર પહેલેથી છે!');
+        safeWrite(ROOT.child('operators').push().set(val), function(ok, msg) {
+            if (ok) { toast('✅ ઓપરેટર સેવ થઈ ગયો!'); $('new-op').value = ''; }
+            else alert('❌ સેવ ન થયું: ' + msg);
+        });
+    }
+
+    // ── TOOL MASTER ──
+    function addToolMaster() {
+        var name  = $('new-tool').value.trim();
+        var cat   = $('new-cat').value.trim() || 'General';
+        var stock = parseInt($('new-stock').value, 10) || 0;
+        var limit = parseInt($('min-limit').value, 10) || 0;
+        var index = parseInt($('edit-tool-index').value, 10);
+        if (!name) return alert('⚠️ ટૂલ નામ જરૂરી છે!');
+        if (!canWrite()) return;
+        var dupIdx = -1;
+        db.tools.forEach(function(t, i){ if (String(t.name).toLowerCase() === name.toLowerCase() && i !== index) dupIdx = i; });
+        if (dupIdx > -1) {
+            highlightDupIndex = dupIdx;
+            renderMasterLists();
+            var items = document.querySelectorAll('#tool-list-display .master-item');
+            if (items[dupIdx]) items[dupIdx].scrollIntoView({ behavior:'smooth', block:'center' });
+            alert('⚠️ "' + name + '" ટૂલ પહેલેથી જ છે!\nનીચે Yellow highlight જુઓ 👇');
+            setTimeout(function(){ highlightDupIndex = -1; renderMasterLists(); }, 3500);
+            return;
+        }
+        highlightDupIndex = -1;
+        var data = { name: name, cat: cat, initialStock: stock, minLimit: limit };
+        var p;
+        if (index > -1 && db.tools[index]) p = ROOT.child('tools').child(db.tools[index]._k).set(data);
+        else p = ROOT.child('tools').push().set(data);
+        safeWrite(p, function(ok, msg) {
+            if (ok) { toast(index > -1 ? '✅ ટૂલ અપડેટ!' : '✅ ટૂલ સેવ!'); cancelToolEdit(); }
+            else alert('❌ સેવ ન થયું: ' + msg);
+        });
+    }
+    function editTool(index) {
+        var t = db.tools[index]; if (!t) return;
+        $('tool-master-title').innerText = '🛠️ ટૂલ એડિટ';
+        $('edit-tool-index').value = index;
+        $('new-tool').value  = t.name;
+        $('new-cat').value   = t.cat;
+        $('new-stock').value = t.initialStock;
+        $('min-limit').value = t.minLimit;
+        $('tool-btn').innerText = '✔ અપડેટ કરો';
+        $('cancel-edit').classList.remove('hidden');
+        window.scrollTo({ top:0, behavior:'smooth' });
+    }
+    function cancelToolEdit() {
+        $('tool-master-title').innerText = '🛠️ ટૂલ માસ્ટર';
+        $('edit-tool-index').value = '-1';
+        ['new-tool','new-cat','new-stock','min-limit'].forEach(function(id){ $(id).value = ''; });
+        $('tool-btn').innerText = '+ ટૂલ ઉમેરો';
+        $('cancel-edit').classList.add('hidden');
+    }
+    function renderMasterLists() {
+        const noOp = `<p style="color:var(--muted);font-size:14px;text-align:center;margin:12px 0;">કોઈ ઓપરેટર નથી</p>`;
+        document.getElementById('op-list-display').innerHTML = db.operators.length
+            ? db.operators.map((o,i)=>`
+                <div class="master-item">
+                    <div class="master-item-info"><span class="master-item-name">👤 ${esc(o)}</span></div>
+                    <button class="btn-sm btn-del" onclick="deleteMaster('operators',${i})">✖</button>
+                </div>`).join('') : noOp;
+
+        const noTool = `<p style="color:var(--muted);font-size:14px;text-align:center;margin:12px 0;">કોઈ ટૂલ નથી</p>`;
+        document.getElementById('tool-list-display').innerHTML = db.tools.length
+            ? db.tools.map((t,i)=>`
+                <div class="master-item ${i===highlightDupIndex?'duplicate-tool':''}">
+                    <div class="master-item-info">
+                        <span class="master-item-name">🔧 ${esc(t.name)}${i===highlightDupIndex?'<span class="dup-badge">⚠️ DUPLICATE</span>':''}</span>
+                        <span class="master-item-sub">${esc(t.cat)} &nbsp;|&nbsp; ઓ.સ્ટ: ${t.initialStock} &nbsp;|&nbsp; Min: ${t.minLimit}</span>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-sm btn-edit" onclick="editTool(${i})">✏️</button>
+                        <button class="btn-sm btn-del"  onclick="deleteMaster('tools',${i})">✖</button>
+                    </div>
+                </div>`).join('') : noTool;
+    }
+
+
+    function deleteMaster(key, index) {
+        if (!confirm('ડીલીટ કરવું છે?')) return;
+        var pass = prompt('🔑 પાસવર્ડ:');
+        if (pass !== '2865') { if (pass !== null) alert('❌ ખોટો પાસવર્ડ!'); return; }
+        if (!canWrite()) return;
+        var ref = key === 'operators' ? ROOT.child('operators').child(db.opKeys[index]) : ROOT.child('tools').child(db.tools[index]._k);
+        safeWrite(ref.remove(), function(ok, msg){ if (!ok) alert('❌ ડીલીટ ન થયું: ' + msg); });
+    }
+
+    function onHistFilter(changed) {
+        if (changed === 'op' && $('hist-op').value !== 'ALL') $('hist-tool').value = 'ALL';
+        if (changed === 'tool' && $('hist-tool').value !== 'ALL') $('hist-op').value = 'ALL';
+        updateHistoryTable();
+    }
+    // ── HISTORY TABLE ──
+    function updateHistoryTable() {
+        const selMonth = document.getElementById('hist-month').value;
+        const selOp    = document.getElementById('hist-op') ? document.getElementById('hist-op').value : 'ALL';
+        const selTool  = document.getElementById('hist-tool') ? document.getElementById('hist-tool').value : 'ALL';
+        const search   = document.getElementById('hist-search') ? document.getElementById('hist-search').value.toLowerCase() : '';
+
+        let histHtml = '';
+        const filtered = db.transactions
+            .filter(tr =>
+                (!selMonth || tr.date.startsWith(selMonth)) &&
+                (selOp==='ALL'   || tr.op===selOp) &&
+                (selTool==='ALL' || tr.tool===selTool) &&
+                (tr.op.toLowerCase().includes(search) || tr.tool.toLowerCase().includes(search))
+            )
+            .slice().reverse();
+
+        const badge = document.getElementById('hist-count-badge');
+        if(badge) badge.innerText = filtered.length + ' એન્ટ્રી';
+
+        filtered.forEach(tr => {
+            const typeBadge = tr.type==='OUT'
+                ? `<span class="type-out">OUT</span>`
+                : `<span class="type-in">IN</span>`;
+            histHtml += `
+            <div class="hist-item">
+                <div class="hist-top-row">
+                    <span class="hist-tool-name">🔧 ${esc(tr.tool)}</span>
+                    <span class="hist-qty">${tr.qty} નંગ</span>
+                </div>
+                <div class="hist-bottom-row">
+                    <div class="hist-meta">
+                        <span class="hist-date">📅 ${tr.date}</span>
+                        <span class="hist-op">👤 ${esc(tr.op)}</span>
+                        ${typeBadge}
+                    </div>
+                    <div class="hist-actions">
+                        <button class="hist-btn hist-btn-edit" onclick="editTransaction('${tr._k}')" title="Edit">✏️</button>
+                        <button class="hist-btn hist-btn-del"  onclick="deleteTransaction('${tr._k}')" title="Delete">🗑️</button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        document.getElementById('history-body-main').innerHTML = histHtml || `<p style="text-align:center;color:var(--muted);padding:24px 0;margin:0;">કોઈ ઇતિહાસ નથી</p>`;
+    }
+
+
+    // ── ALERTS ──
+    function updateAlerts() {
+        let zeroList = [], lowList = [], okCount = 0;
+
+        db.tools.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(t => {
+            let purchased = db.transactions.filter(tr=>tr.tool===t.name&&tr.subType==='Purchase').reduce((s,c)=>s+c.qty,0);
+            let used      = db.transactions.filter(tr=>tr.tool===t.name&&tr.type==='OUT').reduce((s,c)=>s+c.qty,0);
+            let avail     = (t.initialStock||0) + purchased - used;
+            let minLim    = t.minLimit || 0;
+
+            if(avail <= 0) {
+                zeroList.push({ name:t.name, cat:t.cat, avail, minLim, purchased, used, initial:t.initialStock||0 });
+            } else if(avail <= minLim) {
+                lowList.push({ name:t.name, cat:t.cat, avail, minLim, purchased, used, initial:t.initialStock||0 });
+            } else {
+                okCount++;
+            }
+        });
+
+        // Summary counts
+        document.getElementById('alrt-zero-count').innerText = zeroList.length;
+        document.getElementById('alrt-low-count').innerText  = lowList.length;
+        document.getElementById('alrt-ok-count').innerText   = okCount;
+
+        // Zero stock section
+        const zeroCard = document.getElementById('alrt-zero-card');
+        if(zeroList.length === 0) {
+            zeroCard.classList.add('hidden');
+        } else {
+            zeroCard.classList.remove('hidden');
+            document.getElementById('alrt-zero-list').innerHTML = zeroList.map(t => alertItemHTML(t, 'zero')).join('');
+        }
+
+        // Low stock section
+        const lowCard = document.getElementById('alrt-low-card');
+        if(lowList.length === 0) {
+            lowCard.classList.add('hidden');
+        } else {
+            lowCard.classList.remove('hidden');
+            document.getElementById('alrt-low-list').innerHTML = lowList.map(t => alertItemHTML(t, 'low')).join('');
+        }
+
+        // All clear
+        const allOkCard = document.getElementById('alrt-allok-card');
+        if(zeroList.length === 0 && lowList.length === 0) {
+            allOkCard.classList.remove('hidden');
+        } else {
+            allOkCard.classList.add('hidden');
+        }
+    }
+
+    function alertItemHTML(t, type) {
+        const pct = t.minLim > 0 ? Math.min(100, Math.round((t.avail / t.minLim) * 100)) : 0;
+        const barColor = type === 'zero' ? '#c62828' : '#e65100';
+        const barWidth = type === 'zero' ? 0 : pct;
+        return `
+        <div class="alert-item alert-item-${type}">
+            <div class="alert-item-top">
+                <div class="alert-item-name">🔧 ${esc(t.name)}</div>
+                <div class="alert-item-avail alert-avail-${type}">${t.avail <= 0 ? '⛔ ખાલી' : t.avail + ' બાકી'}</div>
+            </div>
+            <div class="alert-item-cat">📁 ${esc(t.cat)}</div>
+            <div class="alert-progress-bar">
+                <div class="alert-progress-fill" style="width:${barWidth}%;background:${barColor};"></div>
+            </div>
+            <div class="alert-item-stats">
+                <span>📦 કુલ: <b>${t.initial + t.purchased}</b></span>
+                <span>🔧 વપરાશ: <b>${t.used}</b></span>
+                <span>⚠️ Min: <b>${t.minLim}</b></span>
+                <span class="alert-avail-${type}">✅ બાકી: <b>${t.avail}</b></span>
+            </div>
+        </div>`;
+    }
+
+
+    // ── EDIT / DELETE TRANSACTION ──
+    function findTr(k) { var r = null; db.transactions.forEach(function(t){ if (t._k === k) r = t; }); return r; }
+    function editTransaction(k) {
+        var tr = findTr(k); if (!tr) return;
+        $('edit-tr-id').value   = k;
+        $('edit-tr-date').value = tr.date;
+        $('edit-tr-op').value   = tr.op;
+        $('edit-tr-tool').value = tr.tool;
+        $('edit-tr-qty').value  = tr.qty;
+        $('edit-modal').classList.add('open');
+    }
+    function closeEditModal(e) {
+        if (!e || e.target === $('edit-modal')) $('edit-modal').classList.remove('open');
+    }
+    function saveEditTransaction() {
+        var pass = prompt('🔑 પાસવર્ડ:');
+        if (pass !== '2865') { if (pass !== null) alert('❌ ખોટો પાસવર્ડ!'); return; }
+        if (!canWrite()) return;
+        var k = $('edit-tr-id').value;
+        if (!findTr(k)) return alert('⚠️ આ એન્ટ્રી હવે મળતી નથી.');
+        var newDate = $('edit-tr-date').value;
+        var newOp   = $('edit-tr-op').value.trim();
+        var newQty  = parseInt($('edit-tr-qty').value, 10);
+        if (!newDate || !newOp || !newQty) return alert('⚠️ બધી વિગત ભરો!');
+        safeWrite(ROOT.child('transactions').child(k).update({ date:newDate, month:newDate.substring(0,7), op:newOp, qty:newQty }), function(ok, msg) {
+            if (ok) { $('edit-modal').classList.remove('open'); toast('✅ અપડેટ થઈ ગયું!'); }
+            else alert('❌ અપડેટ ન થયું: ' + msg);
+        });
+    }
+    function deleteTransaction(k) {
+        if (!confirm('ડીલીટ કરવો છે?')) return;
+        var pass = prompt('🔑 પાસવર્ડ:');
+        if (pass !== '2865') { if (pass !== null) alert('❌ ખોટો પાસવર્ડ!'); return; }
+        if (!canWrite()) return;
+        safeWrite(ROOT.child('transactions').child(k).remove(), function(ok, msg){ if (!ok) alert('❌ ડીલીટ ન થયું: ' + msg); });
+    }
+    function toggleTheme() {
+        var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+    }
+
+    // ── REPORTS: one data builder used by screen view, PDF and print ──
+    var repType = 'STOCK';
+    var REP_TITLES = { STOCK:'📦 સિલક રિપોર્ટ', TOOLS:'🔧 ટૂલ લિસ્ટ', OPERATORS:'👤 ઓપરેટર રિપોર્ટ', HISTORY:'📋 વ્યવહાર રિપોર્ટ' };
+    var REP_COLORS = { STOCK:[198,40,40], TOOLS:[245,124,0], OPERATORS:[46,125,50], HISTORY:[0,151,167] };
+
+    function setRepType(t) {
+        repType = t;
+        ['STOCK','TOOLS','OPERATORS','HISTORY'].forEach(function(x){ $('chip-' + x).className = 'chip' + (x === t ? ' active' : ''); });
+        $('f-month').style.display = (t === 'TOOLS') ? 'none' : '';
+        $('f-op').style.display    = (t === 'OPERATORS' || t === 'HISTORY') ? '' : 'none';
+        $('f-tool').style.display  = (t === 'OPERATORS') ? 'none' : '';
+        $('f-cat').style.display   = (t === 'OPERATORS') ? 'none' : '';
+        updateAllReports();
+    }
+    function clearRepFilters() {
+        $('rep-cat').value = 'ALL'; $('rep-tool').value = 'ALL'; $('rep-op').value = 'ALL';
+        $('rep-month').value = localDate().substring(0, 7);
+        updateAllReports();
+    }
+    function sumQty(list) { var s = 0; list.forEach(function(x){ s += (x.qty || 0); }); return s; }
+
+    // ctx: 'rep' (report tab) or 'hist' (PC history tab)
+    function getFilters(ctx) {
+        if (ctx === 'hist' && $('hist-month')) {
+            return { month: $('hist-month').value, cat: 'ALL', tool: $('hist-tool') ? $('hist-tool').value : 'ALL', op: $('hist-op') ? $('hist-op').value : 'ALL' };
+        }
+        return { month: $('rep-month').value, cat: $('rep-cat').value || 'ALL', tool: $('rep-tool').value || 'ALL', op: $('rep-op').value || 'ALL' };
+    }
+
+    function buildReport(type, f) {
+        var monthStart = f.month ? f.month + '-01' : '';
+        var r = { type: type, rows: [], headG: [], headE: [], summary: '', file: '' };
+        if (type === 'STOCK') {
+            r.headG = ['ટૂલ', 'કેટ.', 'શરૂ', 'આવક', 'જાવક', 'સિલક'];
+            r.headE = ['Tool Name', 'Category', 'Opening', 'In', 'Out', 'Balance', 'Status'];
+            var low = 0;
+            db.tools.slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); }).forEach(function(t) {
+                if (f.cat !== 'ALL' && t.cat !== f.cat) return;
+                if (f.tool !== 'ALL' && t.name !== f.tool) return;
+                var mine = db.transactions.filter(function(tr){ return tr.tool === t.name; });
+                var before = monthStart ? mine.filter(function(tr){ return tr.date < monthStart; }) : [];
+                var within = f.month ? mine.filter(function(tr){ return String(tr.date).substring(0, 7) === f.month; }) : mine;
+                var opening = (t.initialStock || 0) + sumQty(before.filter(function(tr){ return tr.subType === 'Purchase'; })) - sumQty(before.filter(function(tr){ return tr.type === 'OUT'; }));
+                var inQ  = sumQty(within.filter(function(tr){ return tr.subType === 'Purchase'; }));
+                var outQ = sumQty(within.filter(function(tr){ return tr.type === 'OUT'; }));
+                var bal = opening + inQ - outQ;
+                var isLow = bal <= (t.minLimit || 0);
+                if (isLow) low++;
+                r.rows.push({ c: [t.name, t.cat, opening, inQ, outQ, bal], pdf: [t.name, t.cat, opening, inQ, outQ, bal, isLow ? 'LOW' : 'OK'], low: isLow, hl: 5 });
+            });
+            r.summary = 'કુલ ટૂલ: ' + r.rows.length + '  |  ઓછો સ્ટોક: ' + low;
+            r.summaryE = 'Total Tools: ' + r.rows.length + '   |   Low Stock: ' + low;
+            r.file = 'Stock';
+        } else if (type === 'TOOLS') {
+            r.headG = ['ટૂલ', 'કેટ.', 'શરૂ', 'મિન.', 'સિલક'];
+            r.headE = ['Tool Name', 'Category', 'Opening Stock', 'Min Alert', 'Available'];
+            db.tools.slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); }).forEach(function(t) {
+                if (f.cat !== 'ALL' && t.cat !== f.cat) return;
+                if (f.tool !== 'ALL' && t.name !== f.tool) return;
+                var mine = db.transactions.filter(function(tr){ return tr.tool === t.name; });
+                var avail = (t.initialStock || 0) + sumQty(mine.filter(function(tr){ return tr.subType === 'Purchase'; })) - sumQty(mine.filter(function(tr){ return tr.type === 'OUT'; }));
+                var isLow = avail <= (t.minLimit || 0);
+                var c = [t.name, t.cat, t.initialStock || 0, t.minLimit || 0, avail];
+                r.rows.push({ c: c, pdf: c, low: isLow, hl: 4 });
+            });
+            r.summary = 'કુલ ટૂલ: ' + r.rows.length;
+            r.summaryE = 'Total Tools: ' + r.rows.length;
+            r.file = 'Tools';
+        } else if (type === 'OPERATORS') {
+            r.headG = ['ઓપરેટર', 'વખત', 'કુલ નંગ', 'છેલ્લી તારીખ'];
+            r.headE = ['Operator Name', 'Times', 'Total Issued', 'Last Date'];
+            var grand = 0;
+            db.operators.forEach(function(o) {
+                if (f.op !== 'ALL' && o !== f.op) return;
+                var mine = db.transactions.filter(function(tr){
+                    return tr.op === o && tr.type === 'OUT' && (!f.month || String(tr.date).substring(0, 7) === f.month) && (f.tool === 'ALL' || tr.tool === f.tool);
+                });
+                var last = '-';
+                mine.forEach(function(tr){ if (last === '-' || tr.date > last) last = tr.date; });
+                var tot = sumQty(mine); grand += tot;
+                var c = [o, mine.length, tot, last];
+                r.rows.push({ c: c, pdf: c, low: false, hl: -1 });
+            });
+            r.summary = 'કુલ ઓપરેટર: ' + r.rows.length + '  |  કુલ ઇશ્યૂ નંગ: ' + grand;
+            r.summaryE = 'Total Operators: ' + r.rows.length + '   |   Total Issued: ' + grand;
+            r.file = 'Operators';
+        } else { // HISTORY
+            r.headG = ['તારીખ', 'ઓપરેટર', 'ટૂલ', 'પ્રકાર', 'નંગ'];
+            r.headE = ['Date', 'Operator / Supplier', 'Tool Name', 'Type', 'Qty'];
+            var iss = 0, pur = 0;
+            db.transactions.filter(function(tr) {
+                return (!f.month || String(tr.date).substring(0, 7) === f.month) &&
+                       (f.op === 'ALL' || tr.op === f.op) && (f.tool === 'ALL' || tr.tool === f.tool) &&
+                       (f.cat === 'ALL' || tr.cat === f.cat);
+            }).slice().sort(function(a,b){ return (b.date > a.date) ? 1 : (b.date < a.date ? -1 : (b.id||0) - (a.id||0)); })
+            .forEach(function(tr) {
+                var isOut = tr.type === 'OUT';
+                if (isOut) iss++; else pur++;
+                var c = [tr.date, tr.op, tr.tool, isOut ? 'ઇશ્યૂ' : 'ખરીદી', tr.qty];
+                r.rows.push({ c: c, pdf: [tr.date, tr.op, tr.tool, isOut ? 'Issue' : 'Purchase', tr.qty], low: false, hl: -1 });
+            });
+            r.summary = 'કુલ: ' + r.rows.length + '  |  ઇશ્યૂ: ' + iss + '  |  ખરીદી: ' + pur;
+            r.summaryE = 'Total: ' + r.rows.length + '   |   Issue: ' + iss + '   |   Purchase: ' + pur;
+            r.file = 'History';
+        }
+        return r;
+    }
+
+    function updateAllReports() {
+        var f = getFilters('rep');
+        var r = buildReport(repType, f);
+        $('rep-title').innerText = REP_TITLES[repType];
+        $('rep-period').innerText = (repType === 'TOOLS' ? 'હાલની સ્થિતિ' : (f.month ? 'મહિનો: ' + f.month : 'બધો સમય'));
+        $('rep-head').innerHTML = '<tr>' + r.headG.map(function(h){ return '<th>' + h + '</th>'; }).join('') + '</tr>';
+        var html = '';
+        r.rows.forEach(function(row) {
+            html += '<tr>' + row.c.map(function(v, i) {
+                if (i === row.hl) return '<td>' + (row.low ? '<span class="stock-low">' + esc(v) + ' ⚠️</span>' : '<span class="stock-ok">' + esc(v) + '</span>') + '</td>';
+                return '<td>' + (i === 0 ? '<b>' + esc(v) + '</b>' : esc(v)) + '</td>';
+            }).join('') + '</tr>';
+        });
+        $('rep-body').innerHTML = html || '<tr><td colspan="' + r.headG.length + '" style="text-align:center;color:var(--muted);padding:20px">કોઈ ડેટા નથી</td></tr>';
+        $('rep-summary').innerText = r.summary;
+    }
+
+    // ── PDF ──
+    function addFooter(doc, pageW) {
+        var pg = doc.internal.getCurrentPageInfo().pageNumber;
+        var total = doc.internal.getNumberOfPages();
+        doc.setFontSize(8); doc.setTextColor(160,160,160); doc.setFont('helvetica','normal');
+        doc.text('Shri Chamunda Eng Tools', 14, doc.internal.pageSize.getHeight()-8);
+        doc.text('Page ' + pg + ' / ' + total, doc.internal.pageSize.getWidth()-14, doc.internal.pageSize.getHeight()-8, { align:'right' });
+    }
+    function downloadReport() { makePDF(repType, 'rep'); }
+    function downloadPDF(type) { makePDF(type, (type === 'HISTORY' && $('hist-month')) ? 'hist' : 'rep'); }
+
+    function makePDF(type, ctx) {
+        if (!window.jspdf || !window.jspdf.jsPDF) return alert('⚠️ PDF લાઇબ્રેરી લોડ થઈ નથી. નેટ ચાલુ કરીને ફરી પ્રયત્ન કરો, અથવા "પ્રિન્ટ" વાપરો.');
+        var f = getFilters(ctx);
+        var r = buildReport(type, f);
+        var doc = new window.jspdf.jsPDF();
+        var pageW = doc.internal.pageSize.getWidth();
+        var now = new Date();
+        var stamp = pad2(now.getDate()) + '-' + pad2(now.getMonth()+1) + '-' + now.getFullYear();
+        var tm = pad2(now.getHours()) + pad2(now.getMinutes());
+        var col = REP_COLORS[type];
+        var labels = { HISTORY:'TRANSACTION REPORT', STOCK:'STOCK BALANCE REPORT', TOOLS:'TOOL MASTER LIST', OPERATORS:'OPERATOR REPORT' };
+
+        doc.setFillColor(198,40,40); doc.rect(0,0,pageW,30,'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont('helvetica','bold');
+        doc.text('SHRI CHAMUNDA ENG TOOLS', pageW/2, 12, {align:'center'});
+        doc.setFontSize(9); doc.setFont('helvetica','normal');
+        doc.text(labels[type], pageW/2, 20, {align:'center'});
+        doc.setDrawColor(255,255,255); doc.setLineWidth(0.3); doc.line(14,24,pageW-14,24);
+        var parts = [];
+        parts.push('Period: ' + (type === 'TOOLS' ? 'Current' : (f.month || 'All Time')));
+        if (f.cat !== 'ALL' && type !== 'OPERATORS') parts.push('Category: ' + f.cat);
+        if (f.tool !== 'ALL' && type !== 'OPERATORS') parts.push('Tool: ' + f.tool);
+        if (f.op !== 'ALL' && (type === 'OPERATORS' || type === 'HISTORY')) parts.push('Operator: ' + f.op);
+        doc.setFontSize(8);
+        doc.text(parts.join('  |  '), 14, 29);
+        doc.text('Printed: ' + stamp + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()), pageW-14, 29, {align:'right'});
+        doc.setTextColor(30,30,30);
+
+        var colStyles = {};
+        if (type === 'STOCK') colStyles = { 2:{halign:'center'}, 3:{halign:'center'}, 4:{halign:'center'}, 5:{halign:'center',fontStyle:'bold'}, 6:{halign:'center'} };
+        if (type === 'TOOLS') colStyles = { 0:{fontStyle:'bold'}, 2:{halign:'center'}, 3:{halign:'center'}, 4:{halign:'center',fontStyle:'bold'} };
+        if (type === 'OPERATORS') colStyles = { 0:{fontStyle:'bold'}, 1:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'center'} };
+        if (type === 'HISTORY') colStyles = { 0:{halign:'center',cellWidth:26}, 3:{halign:'center',cellWidth:24}, 4:{halign:'center',cellWidth:14} };
+
+        doc.autoTable({
+            head: [r.headE],
+            body: r.rows.map(function(x){ return x.pdf; }),
+            startY: 34,
+            styles: { fontSize: 9, cellPadding: 4 },
+            headStyles: { fillColor: col, textColor: 255, fontStyle: 'bold', halign: 'center' },
+            alternateRowStyles: { fillColor: [248,248,248] },
+            columnStyles: colStyles,
+            didParseCell: function(data) {
+                if (data.section !== 'body') return;
+                var row = r.rows[data.row.index]; if (!row) return;
+                if (type === 'STOCK' && data.column.index === 6) {
+                    data.cell.styles.textColor = row.low ? [198,40,40] : [46,125,50]; data.cell.styles.fontStyle = 'bold';
+                }
+                if (type === 'TOOLS' && data.column.index === 4) {
+                    data.cell.styles.textColor = row.low ? [198,40,40] : [46,125,50];
+                }
+            },
+            didDrawPage: function(){ addFooter(doc, pageW); }
+        });
+        var fY = doc.lastAutoTable.finalY + 8;
+        doc.setFillColor(245,245,245); doc.roundedRect(14, fY, pageW-28, 18, 3, 3, 'F');
+        doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(80,80,80);
+        doc.text(r.summaryE, pageW/2, fY+11, {align:'center'});
+        doc.save('Chamunda_' + r.file + '_' + stamp + '_' + tm + '.pdf');
+    }
+
+
+    // ── INIT ──
+    $('t-date').value = localDate();
+    $('rep-month').value = localDate().substring(0, 7);
+    $('hist-month').value = localDate().substring(0, 7);
+    setMode('OUT');
+    setRepType('STOCK');
+    startListeners();
+
+    // ── PWA: service worker + install button (Windows 11 / Chrome / Edge) ──
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+        window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+    }
+    var deferredInstall = null;
+    var installBtn = $('install-btn');
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault(); deferredInstall = e; installBtn.style.display = 'inline-block';
+    });
+    installBtn.addEventListener('click', function() {
+        if (!deferredInstall) return;
+        deferredInstall.prompt();
+        deferredInstall.userChoice.then(function(){ deferredInstall = null; installBtn.style.display = 'none'; });
+    });
+    window.addEventListener('appinstalled', function(){ installBtn.style.display = 'none'; });
+</script>
+<div class="toast" id="toast"></div>
+</body>
+</html>
